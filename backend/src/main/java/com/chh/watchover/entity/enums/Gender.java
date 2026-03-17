@@ -1,6 +1,6 @@
 package com.chh.watchover.entity.enums;
 
 public enum Gender {
-    MAN,    // 남성
-    FEMALE  // 여성
+    M,    // 남성
+    F  // 여성
 }

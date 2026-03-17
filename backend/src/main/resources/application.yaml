@@ -13,3 +13,7 @@ spring:
     url: "jdbc:mysql://${DB_URL}:${DB_PORT}/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul"
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+
+  # SpringSecurity 설정
+  profiles:
+    active: dev

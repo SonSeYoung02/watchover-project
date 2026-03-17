@@ -5,10 +5,7 @@ import com.chh.watchover.dto.UserResponseDto;
 import com.chh.watchover.service.LoginService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/user")
@@ -30,7 +27,7 @@ public class LoginController {
     */
 
     @PostMapping("/register")
-    public Long userId(UserRequestDto userRequestDto) {
+    public Long userId(@RequestBody UserRequestDto userRequestDto) {
         return loginService.userRegister(userRequestDto);
     }
 
@@ -42,8 +39,8 @@ public class LoginController {
     =====================================================================
     */
 
-    @GetMapping("/Search/{userId}")
-    public UserResponseDto userSearch(Long userId) {
+    @GetMapping("/search/{userId}")
+    public UserResponseDto userSearch(@PathVariable Long userId) {
         return loginService.userSearch(userId);
     }
 }

@@ -7,10 +7,10 @@ import jakarta.persistence.*;
 public class PostEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long postId;
+    private Long userId;
 
     @Column(name = "post_id", nullable = false, length = 20)
-    private String userId;
+    private String post_id;
 
     @Column(name = "title", nullable = false, length = 100)
     private String title;
