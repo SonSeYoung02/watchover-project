@@ -1,2 +1,2 @@
-# Watchover Backend Repository
-## 케어해줘 백엔드 저장소
+# WatchOver Project Repository
+## 캐어해줘 프로젝트
