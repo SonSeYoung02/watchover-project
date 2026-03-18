@@ -1,5 +1,6 @@
 package com.chh.watchover.entity;
 
+import com.chh.watchover.dto.user.RegisterRequestDto;
 import com.chh.watchover.entity.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
@@ -41,4 +42,18 @@ public class UserEntity {
 
     @Column(name = "point")
     private Long point;
+
+    public void updateLoginTime () {
+        this.lastLoginAt = LocalDateTime.now();
+    }
+
+    public static UserEntity from(RegisterRequestDto registerRequestDto) {
+        return UserEntity.builder()
+                .loginId(registerRequestDto.getLoginId())
+                .loginPw(registerRequestDto.getLoginPw())
+                .email(registerRequestDto.getEmail())
+                .nickname(registerRequestDto.getEmail())
+                .gender(registerRequestDto.getGender())
+                .build();
+    }
 }

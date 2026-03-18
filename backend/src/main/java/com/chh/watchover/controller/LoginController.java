@@ -1,10 +1,10 @@
 package com.chh.watchover.controller;
 
-import com.chh.watchover.dto.UserRequestDto;
-import com.chh.watchover.dto.UserResponseDto;
+import com.chh.watchover.dto.ApiResponse;
+import com.chh.watchover.dto.user.*;
 import com.chh.watchover.service.LoginService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,20 +27,37 @@ public class LoginController {
     */
 
     @PostMapping("/register")
-    public Long userId(@RequestBody UserRequestDto userRequestDto) {
-        return loginService.userRegister(userRequestDto);
+    public ApiResponse<RegisterResponseDto> userId(
+            @Valid
+            @RequestBody
+            RegisterRequestDto userRegisterRequestDto
+    ) {
+        return loginService.userRegister(userRegisterRequestDto);
     }
 
     /*
     =====================================================================
     2. 유저 조회
-    - 유저를 userId를 통해서 찾는 메소드
+    - 유저를 userId를 통해서 찾는 메소드 -> userId보다 token 형식으로 변경필요
     - 유저 객체를 반환(DTO를 통해서 반환)
     =====================================================================
     */
 
     @GetMapping("/search/{userId}")
-    public UserResponseDto userSearch(@PathVariable Long userId) {
+    public ApiResponse<SearchResponseDto> userSearch(@PathVariable Long userId) {
         return loginService.userSearch(userId);
+    }
+
+    /*
+    =====================================================================
+    3. 유저 로그인
+    - 유저의 정보를 확인하는 메소드 -> userId보다 token 형식으로 변경필요
+    - 유저 로그인 객체를 반환(DTO를 통해서 반환)
+    =====================================================================
+    */
+
+    @PostMapping("/login")
+    public ApiResponse<LoginResponseDto> userLogin(@RequestBody LoginRequestDto loginRequestDto) {
+        return loginService.userLogin(loginRequestDto);
     }
 }
