@@ -1,11 +1,13 @@
 package com.chh.watchover.dto.user;
 
 import com.chh.watchover.entity.UserEntity;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
 @Builder
+@JsonPropertyOrder({"userId","nickname"})
 public class RegisterResponseDto {
 
     private String userId;
