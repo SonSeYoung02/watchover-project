@@ -27,11 +27,7 @@ public class LoginController {
     */
 
     @PostMapping("/register")
-    public ApiResponse<RegisterResponseDto> userId(
-            @Valid
-            @RequestBody
-            RegisterRequestDto userRegisterRequestDto
-    ) {
+    public ApiResponse<RegisterResponseDto> userId(@Valid @RequestBody RegisterRequestDto userRegisterRequestDto) {
         return loginService.userRegister(userRegisterRequestDto);
     }
 
@@ -57,7 +53,7 @@ public class LoginController {
     */
 
     @PostMapping("/login")
-    public ApiResponse<LoginResponseDto> userLogin(@RequestBody LoginRequestDto loginRequestDto) {
+    public ApiResponse<LoginResponseDto> userLogin(@Valid @RequestBody LoginRequestDto loginRequestDto) {
         return loginService.userLogin(loginRequestDto);
     }
 }

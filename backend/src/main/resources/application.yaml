@@ -1,19 +1,36 @@
 spring:
-  # 환경 변수 파일 불러오기
-  config:
-    import: optional:file:dev.env[.properties]
-
-  # 앱 이름
+  profiles:
+    active: dev
   application:
     name: watchover
-
-  # AWS 데이터베이스(환경 변수 파일 사용)
+---
+spring:
+  config:
+    import: optional:file:prod.env[.properties]
+    activate:
+      on-profile: prod
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: "jdbc:mysql://${DB_URL}:${DB_PORT}/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul"
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-
-  # SpringSecurity 설정
-  profiles:
-    active: dev
+  jwt:
+    secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="
+---
+spring:
+  config:
+    import: optional:file:dev.env[.properties]
+    activate:
+      on-profile: dev
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "jdbc:mysql://${DB_URL}:${DB_PORT}/${DB_NAME}?serverTimezone=Asia/Seoul"
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  # 테이블 자동생성
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  jwt:
+    secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="

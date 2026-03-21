@@ -47,13 +47,4 @@ public class UserEntity {
         this.lastLoginAt = LocalDateTime.now();
     }
 
-    public static UserEntity from(RegisterRequestDto registerRequestDto) {
-        return UserEntity.builder()
-                .loginId(registerRequestDto.getLoginId())
-                .loginPw(registerRequestDto.getLoginPw())
-                .email(registerRequestDto.getEmail())
-                .nickname(registerRequestDto.getEmail())
-                .gender(registerRequestDto.getGender())
-                .build();
-    }
 }
