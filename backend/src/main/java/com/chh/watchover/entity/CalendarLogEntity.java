@@ -12,13 +12,14 @@ public class CalendarLogEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long calendarLogId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     @Column(name = "emotion", nullable = false)
     @Enumerated(EnumType.STRING)
     private Emotion emotion;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

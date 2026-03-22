@@ -34,17 +34,16 @@ public class UserEntity {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Column(name = "total_login", length = 3)
-    private int totalLogin;
+    @Column(name = "create_at")
+    private LocalDateTime createAt = LocalDateTime.now();
 
-    @Column(name = "lastLoginAt")
-    private LocalDateTime lastLoginAt;
-
-    @Column(name = "point")
-    private Long point;
-
-    public void updateLoginTime () {
-        this.lastLoginAt = LocalDateTime.now();
+    public static UserEntity of(RegisterRequestDto dto, String encodedPassword) {
+        return UserEntity.builder()
+                .loginId(dto.getLoginId())
+                .loginPw(dto.getLoginPw())
+                .email(dto.getEmail())
+                .nickname(dto.getNickname())
+                .gender(dto.getGender())
+                .build();
     }
-
 }

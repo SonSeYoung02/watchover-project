@@ -20,6 +20,8 @@ public enum ErrorCode {
     // [로그인] 로그인 실패 오류
     LOGIN_FAILED("", "로그인 실패"),
 
+    POST_NOT_FOUND("", "해당 게시물을 찾을 수 없습니다."),
+
     // [서버] 서버 에러
     INTERNAL_SERVER_ERROR("", "서버 내부 에러가 발생했습니다.");
 

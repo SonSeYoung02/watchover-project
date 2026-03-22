@@ -1,7 +1,7 @@
 package com.chh.watchover.config;
 
 import com.chh.watchover.config.security.JwtAuthenticationFilter;
-import com.chh.watchover.service.JwtTokenProvider;
+import com.chh.watchover.config.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -30,7 +31,7 @@ public class DevSecurityConfig {
 
     // 1. 암호화
     @Bean
-    public BCryptPasswordEncoder passwordEncoder() {    // 복호화 관련 메소드
+    public PasswordEncoder passwordEncoder() {    // 복호화 관련 메소드
         return new BCryptPasswordEncoder();
     }
 

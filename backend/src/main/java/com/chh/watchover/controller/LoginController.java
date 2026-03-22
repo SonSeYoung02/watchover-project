@@ -22,7 +22,6 @@ public class LoginController {
     =====================================================================
     1. 유저 생성
     - 유저를 생성하는 메소드
-    - 반환값으로 userId를 반환(유저 고유 아이디)
     =====================================================================
     */
 
@@ -34,11 +33,9 @@ public class LoginController {
     /*
     =====================================================================
     2. 유저 조회
-    - 유저를 userId를 통해서 찾는 메소드 -> userId보다 token 형식으로 변경필요
-    - 유저 객체를 반환(DTO를 통해서 반환)
+    - 유저를 userId를 통해서 찾는 메소드
     =====================================================================
     */
-
     @GetMapping("/search/{userId}")
     public ApiResponse<SearchResponseDto> userSearch(@PathVariable Long userId) {
         return loginService.userSearch(userId);
@@ -47,11 +44,9 @@ public class LoginController {
     /*
     =====================================================================
     3. 유저 로그인
-    - 유저의 정보를 확인하는 메소드 -> userId보다 token 형식으로 변경필요
-    - 유저 로그인 객체를 반환(DTO를 통해서 반환)
+    - 유저의 정보를 확인하는 메소드
     =====================================================================
     */
-
     @PostMapping("/login")
     public ApiResponse<LoginResponseDto> userLogin(@Valid @RequestBody LoginRequestDto loginRequestDto) {
         return loginService.userLogin(loginRequestDto);
