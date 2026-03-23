@@ -50,10 +50,4 @@ public class PostEntity {
                 .build();
     }
 
-    public String getWriterNickname() {
-        if (this.user == null) {
-            return "(탈퇴한 사용자)";
-        }
-        return this.user.getNickname();
-    }
 }
