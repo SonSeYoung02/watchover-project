@@ -3,18 +3,20 @@ package com.chh.watchover.dto.community;
 import com.chh.watchover.entity.CommentEntity;
 import com.chh.watchover.entity.UserEntity;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Builder
-@JsonPropertyOrder({"commentId","postId","nickname","createdAt","updateAt"})
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@JsonPropertyOrder({"postId","title","content","nickname","createAt","updateAt"})
 public class CommentWriteResponseDto {
 
     private Long commentId;
     private Long postId;
+    private String content;
     private String nickname;
     private LocalDateTime createdAt;
     private LocalDateTime updateAt;
@@ -23,6 +25,7 @@ public class CommentWriteResponseDto {
         return CommentWriteResponseDto.builder()
                 .commentId(comment.getCommentId())
                 .postId(comment.getPostId())
+                .content(comment.getContent())
                 .nickname(user.getNickname())
                 .createdAt(comment.getCreatedAt())
                 .updateAt(comment.getUpdatedAt())

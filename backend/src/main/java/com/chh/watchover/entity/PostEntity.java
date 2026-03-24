@@ -22,7 +22,7 @@ public class PostEntity {
     private Long postId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "user_id")
     private UserEntity user;
 
     @Column(name = "title", nullable = false, length = 100)
@@ -38,7 +38,6 @@ public class PostEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
@@ -48,6 +47,12 @@ public class PostEntity {
                 .title(dto.getTitle())
                 .content(dto.getContent())
                 .build();
+    }
+
+    public void updatePost(String title, String content) {
+        if (title != null) {this.title = title;}
+        if (content != null) {this.content = content;}
+        if (title != null || content != null) {this.updatedAt = LocalDateTime.now();}
     }
 
 }
