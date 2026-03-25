@@ -1,9 +1,7 @@
 package com.chh.watchover.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(
@@ -16,6 +14,8 @@ import lombok.NoArgsConstructor;
         }
 )
 @Getter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BookmarkEntity {
     @Id
@@ -29,4 +29,11 @@ public class BookmarkEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private PostEntity post;
+
+    public static BookmarkEntity createBookmark(UserEntity user, PostEntity post) {
+        return BookmarkEntity.builder()
+                .user(user)
+                .post(post)
+                .build();
+    }
 }

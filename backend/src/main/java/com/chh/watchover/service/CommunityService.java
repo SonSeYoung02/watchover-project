@@ -2,11 +2,13 @@ package com.chh.watchover.service;
 
 import com.chh.watchover.dto.ApiResponse;
 import com.chh.watchover.dto.community.*;
+import com.chh.watchover.entity.BookmarkEntity;
 import com.chh.watchover.entity.CommentEntity;
 import com.chh.watchover.entity.PostEntity;
 import com.chh.watchover.entity.UserEntity;
 import com.chh.watchover.exception.CustomException;
 import com.chh.watchover.exception.ErrorCode;
+import com.chh.watchover.repository.BookmarkRepository;
 import com.chh.watchover.repository.CommentRepository;
 import com.chh.watchover.repository.PostRepository;
 import com.chh.watchover.repository.UserRepository;
@@ -16,7 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CommunityService {
@@ -24,12 +26,19 @@ public class CommunityService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    private final BookmarkRepository bookmarkRepository;
 
     @Autowired
-    public CommunityService(PostRepository postRepository, UserRepository userRepository, CommentRepository commentRepository) {
+    public CommunityService(
+            PostRepository postRepository,
+            UserRepository userRepository,
+            CommentRepository commentRepository,
+            BookmarkRepository bookmarkRepository
+    ) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
+        this.bookmarkRepository = bookmarkRepository;
     }
 
     /*
@@ -83,19 +92,6 @@ public class CommunityService {
 
     /*
     ============================================================================
-    2. 전체 게시물 조회
-    - DB에서 페이징된 엔티티 뭉치를 가져온다.(게시물을 createdAt 시간 순서대로 Desc(올림차)순으로 정렬한다.)
-    - 엔티티를 DTO로 변환하여 최종 응답 객체를 만든다.
-    ============================================================================
-    */
-    public ApiResponse<ListPostPageResponseDto> listPost(Pageable pageable) {
-        Page<PostEntity> postPage = postRepository.findAllByOrderByCreatedAtDesc(pageable);
-        ListPostPageResponseDto pageDto = ListPostPageResponseDto.from(postPage);
-        return ApiResponse.success(pageDto);
-    }
-
-    /*
-    ============================================================================
     3. 게시물 삭제
     - 게시물 ID를 찾아서 post 객체로 넘김
         - 만약 postId가 null 이면 오류 반환
@@ -112,7 +108,20 @@ public class CommunityService {
 
     /*
     ============================================================================
-    4. 댓글 작성
+    4. 전체 게시물 조회
+    - DB에서 페이징된 엔티티 뭉치를 가져온다.(게시물을 createdAt 시간 순서대로 Desc(올림차)순으로 정렬한다.)
+    - 엔티티를 DTO로 변환하여 최종 응답 객체를 만든다.
+    ============================================================================
+    */
+    public ApiResponse<ListPostPageResponseDto> listPost(Pageable pageable) {
+        Page<PostEntity> postPage = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+        ListPostPageResponseDto pageDto = ListPostPageResponseDto.from(postPage);
+        return ApiResponse.success(pageDto);
+    }
+
+    /*
+    ============================================================================
+    1. 댓글 작성
     - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
         - UserEntity가 비어있는 경우 ErrorCode 반환
     - PostEntity가 null이 아닌지 확인 후 Optional을 열어 post에 저장
@@ -130,6 +139,39 @@ public class CommunityService {
         CommentEntity saveComment = commentRepository.save(comment);
         CommentWriteResponseDto commentWriteResponseDto = CommentWriteResponseDto.of(saveComment, user);
         return ApiResponse.success(commentWriteResponseDto);
+    }
+
+    /*
+    ============================================================================
+    1. 북마크 생성
+    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
+        - UserEntity가 비어있는 경우 ErrorCode 반환
+    - PostEntity가 null이 아닌지 확인 후 Optional을 열어 post에 저장
+        - PostEntity가 비어있는 경우 ErrorCode 반환
+    - BookmarkEntity가 null이 아닌지 확인후 Optional을 열어 bookmarkOpt에 저장(에러는 반환하지 않음)
+    - 북마크가 되어있는지 확인(북마크 토글 형식)
+        - 만약 북마크가 되어있으면 북마크 삭제
+        - 만약 북마크가 되어있지 않으면 북마크 생성
+    - 북마크 Dto를 생성해서 표준 응답 포멧으로 반환
+    ============================================================================
+    */
+    public ApiResponse<BookmarkResponseDto> bookmark(Long postId, String loginId) {
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        PostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        Optional<BookmarkEntity> bookmarkOpt = bookmarkRepository.findByUser_userIdAndPost_postId(postId, user.getUserId());
+        boolean isBookmark;
+        if (bookmarkOpt.isPresent()) {
+            bookmarkRepository.delete(bookmarkOpt.get());
+            isBookmark = false;
+        } else {
+            BookmarkEntity newBookmark = BookmarkEntity.createBookmark(user,post);
+            bookmarkRepository.save(newBookmark);
+            isBookmark = true;
+        }
+        BookmarkResponseDto dto = BookmarkResponseDto.from(postId, isBookmark);
+        return ApiResponse.success(dto);
     }
 
 }

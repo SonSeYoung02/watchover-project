@@ -26,6 +26,8 @@ public enum ErrorCode {
     // [게시물] 해당 글 작성자가 아닌경우 에러
     FORBIDDEN_ACCESS("", "글 작성자가 아닙니다."),
 
+    BOOKMARK_NOT_FOUND("", "해당 북마크를 찾을 수 없습니다."),
+
     // [서버] 서버 에러
     INTERNAL_SERVER_ERROR("", "서버 내부 에러가 발생했습니다.");
 

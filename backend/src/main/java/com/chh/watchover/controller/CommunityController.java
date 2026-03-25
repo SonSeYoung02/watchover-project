@@ -4,13 +4,13 @@ import com.chh.watchover.dto.ApiResponse;
 import com.chh.watchover.dto.community.*;
 import com.chh.watchover.service.CommunityService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/community")
@@ -72,8 +72,8 @@ public class CommunityController {
     */
     @GetMapping("/list")
     public ApiResponse<ListPostPageResponseDto> listPost(
-            @RequestParam(defaultValue = "0") int page, // 현재 페이지
-            @RequestParam(defaultValue = "10") int size // 페이지 크기
+            @RequestParam(defaultValue = "0") @Min(0) int page, // 현재 페이지
+            @RequestParam(defaultValue = "10") @Min(1) int size // 페이지 크기
             ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return communityService.listPost(pageable);
@@ -81,7 +81,7 @@ public class CommunityController {
 
     /*
     =====================================================================
-    5. 댓글 작성
+    1. 댓글 작성
     - SpringSecurity에서 현재 로그인된 ID를 찾아서 login 변수에 저장
     - CommentWriteRequestDto와 loginId를 communityService에 반환
     =====================================================================
@@ -92,5 +92,17 @@ public class CommunityController {
         return communityService.commentWrite(commentWriteRequestDto, postId, loginId);
     }
 
+    /*
+    =====================================================================
+    1. 북마크 생성
+    - 사용자 로그인정보에서 로그인 아이디를 가져옴
+    - 게시물 번호와 유저의 로그인 아이디를 전달
+    =====================================================================
+    */
+    @PostMapping("/post/{postId}/bookmark")
+    public ApiResponse<BookmarkResponseDto> bookmark(@PathVariable Long postId, Principal principal) {
+        String loginId = principal.getName();
+        return communityService.bookmark(postId,loginId);
+    }
 
 }
