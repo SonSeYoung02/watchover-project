@@ -11,8 +11,12 @@ import com.chh.watchover.repository.CommentRepository;
 import com.chh.watchover.repository.PostRepository;
 import com.chh.watchover.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class CommunityService {
@@ -77,6 +81,18 @@ public class CommunityService {
         return ApiResponse.success(postUpdateResponseDto);
     }
 
+    /*
+    ============================================================================
+    2. 전체 게시물 조회
+    - DB에서 페이징된 엔티티 뭉치를 가져온다.(게시물을 createdAt 시간 순서대로 Desc(올림차)순으로 정렬한다.)
+    - 엔티티를 DTO로 변환하여 최종 응답 객체를 만든다.
+    ============================================================================
+    */
+    public ApiResponse<ListPostPageResponseDto> listPost(Pageable pageable) {
+        Page<PostEntity> postPage = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+        ListPostPageResponseDto pageDto = ListPostPageResponseDto.from(postPage);
+        return ApiResponse.success(pageDto);
+    }
 
     /*
     ============================================================================
