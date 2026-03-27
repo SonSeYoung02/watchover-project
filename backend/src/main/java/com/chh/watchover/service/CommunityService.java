@@ -111,7 +111,7 @@ public class CommunityService {
     ============================================================================
     */
     public ApiResponse<ListPostPageResponseDto> listPost(Pageable pageable) {
-        Page<PostEntity> postPage = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+        Page<PostEntity> postPage = postRepository.findAll(pageable);
         ListPostPageResponseDto pageDto = ListPostPageResponseDto.from(postPage);
         return ApiResponse.success(pageDto);
     }
@@ -161,9 +161,10 @@ public class CommunityService {
     -
     ============================================================================
     */
-    public ApiResponse<PopularPostResponseDto> popularPost() {
-
-        return ApiResponse.success(null);
+    public ApiResponse<ListPostPageResponseDto> popularPost(Pageable pageable) {
+        Page<PostEntity> postPage = postRepository.findAll(pageable);
+        ListPostPageResponseDto pageDto = ListPostPageResponseDto.from(postPage);
+        return ApiResponse.success(pageDto);
     }
 
     /*

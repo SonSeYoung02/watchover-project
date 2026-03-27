@@ -12,10 +12,10 @@ import java.util.stream.Collectors;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@JsonPropertyOrder({"totalPage","totalElements","isFirst","isLast","postResponseDtoList"})
+@JsonPropertyOrder({"totalPage","totalElements","isFirst","isLast","listPost"})
 public class ListPostPageResponseDto {
 
-    private List<ListPostResponseDto> postResponseDtoList;
+    private List<ListPostResponseDto> listPost;
     private int totalPage;
     private long totalElements;
     private boolean isFirst;
@@ -23,7 +23,7 @@ public class ListPostPageResponseDto {
 
     public static ListPostPageResponseDto from(Page<PostEntity> postPage) {
         return ListPostPageResponseDto.builder()
-                .postResponseDtoList(postPage.getContent().stream()
+                .listPost(postPage.getContent().stream()
                         .map(ListPostResponseDto::from)
                         .collect(Collectors.toList()))
                 .totalPage(postPage.getTotalPages())

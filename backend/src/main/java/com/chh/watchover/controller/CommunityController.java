@@ -94,12 +94,16 @@ public class CommunityController {
     /*
     =====================================================================
     6. 게시물 좋아요 순서로 조회
-    -
+    - 좋아요 순서로 데이터를 보내도록 강제함
     =====================================================================
     */
     @GetMapping("/post/popular")
-    public ApiResponse<PopularPostResponseDto> popularPost() {
-        return communityService.popularPost();
+    public ApiResponse<ListPostPageResponseDto> popularPost(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("likeCount").descending().and(Sort.by("createdAt").descending()));
+        return communityService.popularPost(pageable);
     }
 
     /*
