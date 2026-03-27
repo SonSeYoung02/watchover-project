@@ -11,4 +11,5 @@ import java.util.Optional;
 @Repository
 public interface PostRepository extends JpaRepository<PostEntity, Long> {
     Page<PostEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
 }

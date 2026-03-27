@@ -55,4 +55,12 @@ public class PostEntity {
         if (title != null || content != null) {this.updatedAt = LocalDateTime.now();}
     }
 
+    public int subtractLike() {
+        return this.likeCount--;
+    }
+
+    public int addLike() {
+        return this.likeCount++;
+    }
+
 }

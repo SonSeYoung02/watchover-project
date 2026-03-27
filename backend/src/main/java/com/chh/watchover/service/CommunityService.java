@@ -2,16 +2,10 @@ package com.chh.watchover.service;
 
 import com.chh.watchover.dto.ApiResponse;
 import com.chh.watchover.dto.community.*;
-import com.chh.watchover.entity.BookmarkEntity;
-import com.chh.watchover.entity.CommentEntity;
-import com.chh.watchover.entity.PostEntity;
-import com.chh.watchover.entity.UserEntity;
+import com.chh.watchover.entity.*;
 import com.chh.watchover.exception.CustomException;
 import com.chh.watchover.exception.ErrorCode;
-import com.chh.watchover.repository.BookmarkRepository;
-import com.chh.watchover.repository.CommentRepository;
-import com.chh.watchover.repository.PostRepository;
-import com.chh.watchover.repository.UserRepository;
+import com.chh.watchover.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,18 +21,21 @@ public class CommunityService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final BookmarkRepository bookmarkRepository;
+    private final LikeRepository likeRepository;
 
     @Autowired
     public CommunityService(
             PostRepository postRepository,
             UserRepository userRepository,
             CommentRepository commentRepository,
-            BookmarkRepository bookmarkRepository
+            BookmarkRepository bookmarkRepository,
+            LikeRepository likeRepository
     ) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.bookmarkRepository = bookmarkRepository;
+        this.likeRepository = likeRepository;
     }
 
     /*
@@ -121,6 +118,56 @@ public class CommunityService {
 
     /*
     ============================================================================
+    5. 좋아요 생성
+    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
+        - UserEntity가 비어있는 경우 ErrorCode 반환
+    - PostEntity가 null이 아닌지 확인 후 Optional을 열어 post에 저장
+        - PostEntity가 비어있는 경우 ErrorCode 반환
+    - LikeEntity가 null이 아닌지 확인후 Optional을 열어 likeOpt에 저장(에러는 반환하지 않음)
+    - 좋아요가 되어있는지 확인(좋아요 토글 형식)
+        - 만약 좋아요가 되어있으면
+            - 좋아요 삭제
+            - PostEntity 필드의 likeCount--
+        - 만약 좋아요가 되어있지 않으면
+            - 좋아요 생성
+            - PostEntity 필드의 likeCount++
+    - 좋아요 Dto를 생성해서 표준 응답 포멧으로 반환
+    ============================================================================
+    */
+    public ApiResponse<LikePostResponseDto> likePost(Long postId, String loginId) {
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        PostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        Optional<LikeEntity> likeOpt = likeRepository.findByUser_UserIdAndPost_PostId(user.getUserId(), post.getPostId());
+        boolean isLike;
+        if (likeOpt.isPresent()) {
+            likeRepository.delete(likeOpt.get());
+            post.subtractLike();
+            isLike = false;
+        } else {
+            LikeEntity like = LikeEntity.of(user,post);
+            likeRepository.save(like);
+            post.addLike();
+            isLike = true;
+        }
+        LikePostResponseDto dto = LikePostResponseDto.of(post.getPostId(), isLike);
+        return ApiResponse.success(dto);
+    }
+
+    /*
+    ============================================================================
+    5. 유저가 작성한 게시물 조회
+    -
+    ============================================================================
+    */
+    public ApiResponse<PopularPostResponseDto> popularPost() {
+
+        return ApiResponse.success(null);
+    }
+
+    /*
+    ============================================================================
     1. 댓글 작성
     - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
         - UserEntity가 비어있는 경우 ErrorCode 반환
@@ -160,7 +207,7 @@ public class CommunityService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        Optional<BookmarkEntity> bookmarkOpt = bookmarkRepository.findByUser_userIdAndPost_postId(postId, user.getUserId());
+        Optional<BookmarkEntity> bookmarkOpt = bookmarkRepository.findByUser_userIdAndPost_postId(post.getPostId(), user.getUserId());
         boolean isBookmark;
         if (bookmarkOpt.isPresent()) {
             bookmarkRepository.delete(bookmarkOpt.get());

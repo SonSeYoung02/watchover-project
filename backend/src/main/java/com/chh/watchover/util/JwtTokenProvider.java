@@ -1,4 +1,4 @@
-package com.chh.watchover.config.security;
+package com.chh.watchover.util;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;

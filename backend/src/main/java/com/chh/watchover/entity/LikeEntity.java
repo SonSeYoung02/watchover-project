@@ -3,6 +3,7 @@ package com.chh.watchover.entity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -19,10 +20,11 @@ import java.time.LocalDateTime;
                 )
         }
 )
+@Builder
 @EntityListeners(AuditingEntityListener.class)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class LikesEntity {
+public class LikeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long likeId;
@@ -38,4 +40,11 @@ public class LikesEntity {
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    public static LikeEntity of(UserEntity user, PostEntity post) {
+        return LikeEntity.builder()
+                .post(post)
+                .user(user)
+                .build();
+    }
 }

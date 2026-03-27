@@ -1,6 +1,6 @@
 package com.chh.watchover.service;
 
-import com.chh.watchover.config.security.JwtTokenProvider;
+import com.chh.watchover.util.JwtTokenProvider;
 import com.chh.watchover.dto.ApiResponse;
 import com.chh.watchover.dto.user.*;
 import com.chh.watchover.entity.UserEntity;
@@ -8,7 +8,6 @@ import com.chh.watchover.exception.CustomException;
 import com.chh.watchover.exception.ErrorCode;
 import com.chh.watchover.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 

@@ -25,7 +25,7 @@ public class CommunityController {
 
     /*
     =====================================================================
-    1. 게시물 작성
+    1. 게시물 생성
     - SpringSecurity에서 현재 로그인된 ID를 찾아서 login 변수에 저장
     - PostWriteRequestDto와 loginId를 communityService에 반환
     =====================================================================
@@ -77,6 +77,29 @@ public class CommunityController {
             ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return communityService.listPost(pageable);
+    }
+
+    /*
+    =====================================================================
+    5. 게시물에 좋아요 생성
+    - 게시물 id를 넣어서 유저의 좋아요 생성
+    =====================================================================
+    */
+    @PostMapping("/post/{postId}/like")
+    public ApiResponse<LikePostResponseDto> likePost(@PathVariable Long postId, Principal principal) {
+        String loginId = principal.getName();
+        return communityService.likePost(postId, loginId);
+    }
+
+    /*
+    =====================================================================
+    6. 게시물 좋아요 순서로 조회
+    -
+    =====================================================================
+    */
+    @GetMapping("/post/popular")
+    public ApiResponse<PopularPostResponseDto> popularPost() {
+        return communityService.popularPost();
     }
 
     /*

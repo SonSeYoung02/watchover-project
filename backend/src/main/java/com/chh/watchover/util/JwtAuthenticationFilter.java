@@ -1,4 +1,4 @@
-package com.chh.watchover.config.security;
+package com.chh.watchover.util;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

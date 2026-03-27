@@ -19,8 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-@Profile("prod")
-public class ProdSecurityConfig {
+public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
 
