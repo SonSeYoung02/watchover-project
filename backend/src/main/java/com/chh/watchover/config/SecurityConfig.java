@@ -1,7 +1,7 @@
 package com.chh.watchover.config;
 
-import com.chh.watchover.config.security.JwtAuthenticationFilter;
-import com.chh.watchover.config.security.JwtTokenProvider;
+import com.chh.watchover.util.JwtAuthenticationFilter;
+import com.chh.watchover.util.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
