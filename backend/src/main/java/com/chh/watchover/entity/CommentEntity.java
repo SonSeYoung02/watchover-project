@@ -1,5 +1,6 @@
 package com.chh.watchover.entity;
 
+import com.chh.watchover.dto.community.CommentEditRequestDto;
 import com.chh.watchover.dto.community.CommentWriteRequestDto;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,8 +26,9 @@ public class CommentEntity {
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    @Column(name = "post_id", nullable = false)
-    private Long postId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", nullable = false)
+    private PostEntity post;
 
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -39,11 +41,19 @@ public class CommentEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public static CommentEntity of(CommentWriteRequestDto dto, UserEntity user, Long postId) {
+    public static CommentEntity of(CommentWriteRequestDto dto, UserEntity user, PostEntity post) {
         return CommentEntity.builder()
                 .user(user)
-                .postId(postId)
+                .post(post)
                 .content(dto.getContent())
                 .build();
+    }
+
+    public void updateComment(CommentEditRequestDto dto) {
+        if (content != null) {
+            this.content = dto.getContent();
+            System.out.println(dto.getContent());
+            this.updatedAt = LocalDateTime.now();
+        }
     }
 }

@@ -121,6 +121,19 @@ public class CommunityController {
 
     /*
     =====================================================================
+    2. 댓글 수정
+    - 유저의 로그인 정보 전달
+    - DTO, postId, commentId, loginId 반환
+    =====================================================================
+    */
+    @PatchMapping("/post/{postId}/comment/{commentId}")
+    public ApiResponse<CommentEditResponseDto> commentEdit(@PathVariable Long postId, @PathVariable Long commentId,@Valid @RequestBody CommentEditRequestDto commentEditRequestDto, Principal principal) {
+        String loginId = principal.getName();
+        return communityService.commentEdit(commentEditRequestDto, postId, commentId, loginId);
+    }
+
+    /*
+    =====================================================================
     1. 북마크 생성
     - 사용자 로그인정보에서 로그인 아이디를 가져옴
     - 게시물 번호와 유저의 로그인 아이디를 전달

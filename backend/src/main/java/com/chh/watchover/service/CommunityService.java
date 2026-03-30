@@ -158,7 +158,8 @@ public class CommunityService {
     /*
     ============================================================================
     5. 유저가 작성한 게시물 조회
-    -
+    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
+    - pageDto를 이용해서 페이지 반환
     ============================================================================
     */
     public ApiResponse<ListPostPageResponseDto> popularPost(Pageable pageable) {
@@ -183,10 +184,37 @@ public class CommunityService {
     public ApiResponse<CommentWriteResponseDto> commentWrite(CommentWriteRequestDto dto, Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        CommentEntity comment = CommentEntity.of(dto, user, postId);
+        PostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        CommentEntity comment = CommentEntity.of(dto, user, post);
         CommentEntity saveComment = commentRepository.save(comment);
-        CommentWriteResponseDto commentWriteResponseDto = CommentWriteResponseDto.of(saveComment, user);
+        CommentWriteResponseDto commentWriteResponseDto = CommentWriteResponseDto.of(saveComment, post, user);
         return ApiResponse.success(commentWriteResponseDto);
+    }
+
+    /*
+    ============================================================================
+    2. 댓글 수정
+    ============================================================================
+     */
+    @Transactional
+    public ApiResponse<CommentEditResponseDto> commentEdit(CommentEditRequestDto dto, Long postId, Long commentId, String loginId) {
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        PostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        CommentEntity comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+
+        if (!comment.getUser().equals(user)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_USER);
+        }
+        if (!comment.getPost().getPostId().equals(post.getPostId())) {
+            throw new CustomException(ErrorCode.COMMENT_NOT_IN_POST);
+        }
+        comment.updateComment(dto);
+        CommentEditResponseDto commentEditResponseDto = CommentEditResponseDto.of(comment, user, post);
+        return ApiResponse.success(commentEditResponseDto);
     }
 
     /*
