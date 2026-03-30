@@ -1,5 +1,6 @@
 package com.chh.watchover.config;
 
+import com.chh.watchover.dto.ApiResponse;
 import com.chh.watchover.util.JwtAuthenticationFilter;
 import com.chh.watchover.util.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,10 +12,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @EnableWebSecurity
@@ -43,9 +46,16 @@ public class SecurityConfig {
                 )
                 .logout( (logout) -> logout
                         .logoutUrl("/api/user/logout")
+                        .addLogoutHandler((request, response, authentication) -> {
+                            SecurityContextHolder.clearContext();
+                        })
                         .logoutSuccessHandler(((request, response, authentication) -> {
                             response.setStatus(HttpServletResponse.SC_ACCEPTED);
-                            response.getWriter().write("{\"message\": \"Logout Success\"}");
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            ApiResponse<Void> apiResponse = ApiResponse.success(null);
+                            String json = new ObjectMapper().writeValueAsString(apiResponse);
+                            response.getWriter().write(json);
                         }))
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
