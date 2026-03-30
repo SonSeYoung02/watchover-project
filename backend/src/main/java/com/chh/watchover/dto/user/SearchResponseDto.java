@@ -16,18 +16,14 @@ public class SearchResponseDto {
     private String loginId;
     private String email;
     private String nickname;
-    private int total_login;
-    private LocalDateTime lastLoginAt;
-    private Long point;
+    private LocalDateTime createAt;
 
     public static SearchResponseDto from(UserEntity user) {
         return SearchResponseDto.builder()
                 .loginId(user.getLoginId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
-                .total_login(user.getTotalLogin())
-                .lastLoginAt(user.getLastLoginAt())
-                .point(user.getPoint())
+                .createAt(user.getCreateAt())
                 .build();
     }
 

@@ -7,7 +7,7 @@ import org.aspectj.apache.bcel.classfile.Code;
 
 @Builder
 @Getter
-@JsonPropertyOrder({"code","message","data","error"})
+@JsonPropertyOrder({"code","message","data"})
 public class ApiResponse <T>{
 
     private String code;

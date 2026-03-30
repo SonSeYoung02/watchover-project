@@ -9,8 +9,9 @@ public class AssessmentEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long assessmentId;
 
-    @Column(name = "userId", nullable = false)
-    private Long userId;
+    @ManyToOne
+    @JoinColumn(name = "userId", nullable = false)
+    private UserEntity user;
 
     @Column(name = "result")
     private String result;

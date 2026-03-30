@@ -10,10 +10,10 @@ public class CharacterProfileEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long characterProfileId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
-    @Column(name = "type", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private Type type;
+    @Column(name = "image", length = 255)
+    private String image = null;
 }
