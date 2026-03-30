@@ -23,7 +23,7 @@ public class SearchResponseDto {
                 .loginId(user.getLoginId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
-                .createAt(user.getCreateAt())
+                .createAt(user.getCreatedAt())
                 .build();
     }
 

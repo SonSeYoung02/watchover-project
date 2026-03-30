@@ -58,13 +58,8 @@ public class LoginService {
     ============================================================================
      */
     public ApiResponse<SearchResponseDto> userSearch(Long userId) {
-        Optional<UserEntity> result = userRepository.findById(userId);
-        final UserEntity user;
-        if (result.isPresent()) {
-            user = result.get();
-        } else {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         SearchResponseDto searchResponseDto = SearchResponseDto.from(user);
         return ApiResponse.success(searchResponseDto);
     }
@@ -79,13 +74,40 @@ public class LoginService {
     - LoginResponseDto에 토큰을 넣고 생성
     - 표준 응답 포멧에 따라 반환
     ============================================================================
-     */
+    */
     public ApiResponse<LoginResponseDto> userLogin(LoginRequestDto loginRequestDto) {
-        final UserEntity user = userRepository.findByLoginId(loginRequestDto.getLoginId())
+        UserEntity user = userRepository.findByLoginId(loginRequestDto.getLoginId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         if (!user.getLoginId().equals(loginRequestDto.getLoginId()) || !passwordEncoder.matches(loginRequestDto.getLoginPw(), user.getLoginPw())) { throw new CustomException(ErrorCode.LOGIN_FAILED); }
         String token = jwtTokenProvider.createToken(user.getLoginId());
         LoginResponseDto loginResponseDto = LoginResponseDto.from(token);
         return ApiResponse.success(loginResponseDto);
+    }
+
+    /*
+    ============================================================================
+    4. 유저 삭제
+    ============================================================================
+    */
+    public ApiResponse<UserDeleteResponseDto> userDelete(String loginId) {
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        UserDeleteResponseDto userDeleteResponseDto = UserDeleteResponseDto.from(user);
+        userRepository.delete(user);
+        return ApiResponse.success(userDeleteResponseDto);
+    }
+
+    /*
+    ============================================================================
+    5. 유저 정보 수정
+    ============================================================================
+    */
+    public ApiResponse<UserUpdateResponseDto> userUpdate(UserUpdateRequestDto dto,String loginId) {
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        String encodedPw = passwordEncoder.encode(dto.getLoginPw());
+        UserEntity updateUser = user.userUpdate(dto, encodedPw);
+        UserUpdateResponseDto userUpdateResponseDto = UserUpdateResponseDto.from(updateUser);
+        return ApiResponse.success(userUpdateResponseDto);
     }
 }
