@@ -4,12 +4,15 @@ import com.chh.watchover.dto.user.RegisterRequestDto;
 import com.chh.watchover.entity.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Entity
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "users")
@@ -34,13 +37,14 @@ public class UserEntity {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
+    @CreatedDate
     @Column(name = "create_at")
-    private LocalDateTime createAt = LocalDateTime.now();
+    private LocalDateTime createAt;
 
     public static UserEntity of(RegisterRequestDto dto, String encodedPassword) {
         return UserEntity.builder()
                 .loginId(dto.getLoginId())
-                .loginPw(dto.getLoginPw())
+                .loginPw(encodedPassword)
                 .email(dto.getEmail())
                 .nickname(dto.getNickname())
                 .gender(dto.getGender())

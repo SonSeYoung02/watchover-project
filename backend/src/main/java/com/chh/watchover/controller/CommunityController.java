@@ -134,6 +134,21 @@ public class CommunityController {
 
     /*
     =====================================================================
+    3. 댓글 전체 조회
+    - 유저의 로그인 정보 전달
+    =====================================================================
+    */
+    @GetMapping("/comment")
+    public ApiResponse<ListCommentPageResponseDto> listComment(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return communityService.listComment(pageable);
+    }
+
+    /*
+    =====================================================================
     1. 북마크 생성
     - 사용자 로그인정보에서 로그인 아이디를 가져옴
     - 게시물 번호와 유저의 로그인 아이디를 전달

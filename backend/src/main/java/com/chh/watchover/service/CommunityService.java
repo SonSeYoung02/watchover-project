@@ -219,6 +219,17 @@ public class CommunityService {
 
     /*
     ============================================================================
+    3. 사용자의 댓글 전체 조회
+    ============================================================================
+     */
+    public ApiResponse<ListCommentPageResponseDto> listComment(Pageable pageable) {
+        Page<CommentEntity> commentPage = commentRepository.findAll(pageable);
+        ListCommentPageResponseDto pageDto = ListCommentPageResponseDto.from(commentPage);
+        return ApiResponse.success(pageDto);
+    }
+
+    /*
+    ============================================================================
     1. 북마크 생성
     - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
         - UserEntity가 비어있는 경우 ErrorCode 반환
