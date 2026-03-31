@@ -1,0 +1,92 @@
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0 40px;
+  background-color: #ffffff;
+}
+
+.logo-section {
+  margin-bottom: 80px; /* 로고와 입력창 사이 간격 */
+}
+
+.main-logo {
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -2px;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 320px;
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    
+    border-bottom: 2px solid #333333; 
+    margin-bottom: 25px;
+    padding-bottom: 8px;
+    width: 100%;
+}
+.input-wrapper:focus-within {
+  border-bottom: 2px solid #000000;
+}
+
+/* 아이콘 색상도 선에 맞춰 조금 더 진하게 */
+.input-icon {
+  color: #333333;
+  margin-right: 12px;
+}
+
+.input-wrapper input {
+border: none;
+  outline: none;
+  width: 100%;
+  font-size: 16px;
+  
+  color: #000000; 
+  
+  background-color: transparent; 
+}
+
+.button-group {
+  margin-top: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-login, .btn-signup {
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: #F3F4F6; /* 피그마의 연한 회색 버튼색 */
+  color: #4B5563;
+}
+
+.btn-login:hover { background-color: #E5E7EB; }
+
+.find-options {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 14px;
+  color: #9CA3AF;
+  text-decoration: underline;
+}
+/* 브라우저 자동완성 시 배경색 변하는 것 방지용*/
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #000;
+  -webkit-box-shadow: 0 0 0px 1000px #fff inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
