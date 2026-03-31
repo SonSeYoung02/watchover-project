@@ -19,7 +19,7 @@ const LoginPage = () => {
     localStorage.setItem('nickname', '김범진'); 
     localStorage.setItem('userId', '1');
 
-    // 2. 서버 검사 없이 바로 메인 화면으로 이동!
+    // 2. 서버 검사 없이 바로 메인 화면으로 이동
     navigate('/main');
   };
 
