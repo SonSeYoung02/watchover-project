@@ -1,0 +1,36 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: watchover
+---
+spring:
+  config:
+    import: optional:file:prod.env[.properties]
+    activate:
+      on-profile: prod
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "jdbc:mysql://${DB_URL_PROD}:${DB_PORT_PROD}/${DB_NAME_PROD}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul"
+    username: ${DB_USERNAME_PROD}
+    password: ${DB_PASSWORD_PROD}
+  jwt:
+    secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="
+---
+spring:
+  config:
+    import: optional:file:dev.env[.properties]
+    activate:
+      on-profile: dev
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "jdbc:mysql://${DB_URL_DEV}:${DB_PORT_DEV}/${DB_NAME_DEV}?serverTimezone=Asia/Seoul"
+    username: ${DB_USERNAME_DEV}
+    password: ${DB_PASSWORD_DEV}
+  # 테이블 자동생성
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  jwt:
+    secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="
