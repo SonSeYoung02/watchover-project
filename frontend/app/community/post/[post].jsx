@@ -26,7 +26,7 @@ import {
 } from "react-native";
 
 // ✅ [연동 핵심] 커뮤니티의 전역 북마크 상태 가져오기
-import { globalBookmarkState } from "../(tabs)/community";
+import { globalBookmarkState } from "..";
 
 export const globalLikeState: Record<string, boolean> = {};
 export const globalLikeCountState: Record<string, number> = {};

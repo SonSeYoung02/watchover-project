@@ -13,8 +13,8 @@ import {
 } from "react-native";
 
 // ✅ 상세 페이지와 커뮤니티에서 사용하는 전역 상태들 가져오기
-import { globalBookmarkState } from "../(tabs)/community";
-import * as PostData from "../post/[id]";
+import { globalBookmarkState } from "..";
+import * as PostData from "../post/[post]";
 
 export default function SearchResultPage() {
   const router = useRouter();

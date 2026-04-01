@@ -20,7 +20,7 @@ import {
 } from "react-native";
 
 // ✅ 상세 페이지의 실시간 데이터 참조
-import * as PostData from "../post/[id]";
+import * as PostData from "./post/[post]";
 
 // 전역 상태 관리 (북마크)
 export let globalBookmarkState: { [key: string]: boolean } = {
