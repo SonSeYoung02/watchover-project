@@ -1,0 +1,120 @@
+/* 전체 레이아웃 (아이폰17 규격 반영) */
+.signup-page-container {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  min-height: 100vh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
+}
+
+/* 헤더 */
+.signup-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 15px 20px;
+}
+
+.back-icon {
+  position: absolute;
+  left: 20px;
+  cursor: pointer;
+}
+
+.header-title { /* 상단 신규회원가입 타이틀 */
+  font-size: 22px;      
+  font-weight: 800;      
+  color: #111827;       
+  margin: 0;
+  text-align: center;
+}
+
+/* 컨텐츠 (좌측 정렬 핵심) */
+.signup-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  text-align: left; /* 전체 좌측 정렬 */
+}
+
+.section-title { /*회원 정보 */
+  font-size: 20px;      
+  font-weight: 700;      /* 두껍게 */
+  color: #1F2937;       /* 진한 회색 */
+  margin-top: 10px;
+  margin-bottom: 30px;  /* 아래 입력창과의 간격을 넓혀서 잘 보이게 */
+  text-align: left;
+}
+
+/* 입력 필드 공통 */
+.input-field {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.input-field label { /* 입력창 라벨 */
+  display: block;
+  font-size: 15px;     
+  font-weight: 700;     
+  color: #374151;       
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.input-field input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  box-sizing: border-box;
+  background-color: #ffffff !important;
+  font-size: 14px;
+}
+
+/* 성별 버튼 스타일 */
+.gender-group {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.gender-btn {
+  flex: 1;
+  padding: 14px;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #9CA3AF;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gender-btn.active {
+  background-color: #F3F4F6;
+  color: #1F2937;
+  border: 2px solid #1F2937;
+}
+
+/* 도움말 */
+.helper-text-group p {
+  font-size: 11px;
+  color: #9CA3AF;
+  margin: 5px 0 0 2px;
+}
+
+/* 가입 완료 버튼 */
+.btn-signup-complete {
+  width: 100%;
+  padding: 16px;
+  background-color: #1F2937; /* 디자인에 따라 색상 조절 가능 */
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 30px;
+  cursor: pointer;
+}
