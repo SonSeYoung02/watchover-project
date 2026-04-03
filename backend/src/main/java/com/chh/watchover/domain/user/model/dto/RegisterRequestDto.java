@@ -3,6 +3,7 @@ package com.chh.watchover.domain.user.model.dto;
 import com.chh.watchover.domain.user.model.type.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 
@@ -22,7 +23,7 @@ public class RegisterRequestDto {
     @NotBlank(message = "별명은  필수 입력값입니다.")
     private String nickname;
 
-    @NotBlank(message = "성별은  필수 입력값입니다.")
+    @NotNull(message = "성별은  필수 입력값입니다.")
     private Gender gender;
 
 }
