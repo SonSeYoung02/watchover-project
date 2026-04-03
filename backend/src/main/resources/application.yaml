@@ -34,3 +34,8 @@ spring:
     show-sql: true
   jwt:
     secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="
+
+  # OpenAI API Key 설정 (환경변수에서 읽어옴)
+  openai:
+    api:
+      key: ${OPENAI_API_KEY}
