@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 public class CalendarLogEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "calendar_log_id")
     private Long calendarLogId;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,5 +1,6 @@
 package com.chh.watchover.domain.calendar.service;
 
+import com.chh.watchover.domain.calendar.model.dto.EmotionStatResponse;
 import com.chh.watchover.domain.calendar.model.entity.CalendarLogEntity;
 import com.chh.watchover.domain.chatbot.model.entity.ChatRoomEntity;
 import com.chh.watchover.domain.chatbot.model.entity.MessageEntity;
@@ -7,7 +8,8 @@ import com.chh.watchover.domain.calendar.model.type.EmotionType;
 import com.chh.watchover.domain.calendar.repository.CalendarLogRepository;
 import com.chh.watchover.domain.chatbot.repository.ChatRoomRepository;
 import com.chh.watchover.domain.chatbot.repository.MessageRepository;
-import jakarta.transaction.Transactional;
+import com.chh.watchover.domain.user.model.entity.UserEntity;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -103,5 +105,11 @@ public class AnalysisService {
         calendarLogRepository.save(calendarLog);
 
         return analyzedEmotion;
+    }
+
+    @Transactional(readOnly = true)
+    public List<EmotionStatResponse> getMonthlyEmotionStats(UserEntity user, int year, int month) {
+        // Repository에 작성한 통계 쿼리를 호출합니다.
+        return calendarLogRepository.getMonthlyStats(user, year, month);
     }
 }
