@@ -21,4 +21,10 @@ public class ApiResponse <T>{
                 .build();
     }
 
+    // 예외 발생 시 사용할 응답
+    public static <T> ApiResponse<T> error(String message) {
+        return new ApiResponse<>("ERROR", message, null);
+    }
+
+
 }

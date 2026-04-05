@@ -31,6 +31,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+      naming:
+        # [추가] 물리적 이름 매핑 전략을 표준(Standard)으로 고정하여 중복 매핑 방지
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
   jwt:
     secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="
@@ -39,3 +42,18 @@ spring:
   openai:
     api:
       key: ${OPENAI_API_KEY}
+
+  # AWS S3 설정 (새로 추가)
+cloud:
+  aws:
+    s3:
+      bucket: ${S3_BUCKET_NAME}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false # EC2에서 실행할 때 불필요한 스택 확인 방지
+
+
