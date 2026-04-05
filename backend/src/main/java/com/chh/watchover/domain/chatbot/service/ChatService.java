@@ -9,7 +9,7 @@ import com.chh.watchover.domain.chatbot.repository.ChatRoomRepository;
 import com.chh.watchover.domain.chatbot.repository.MessageRepository;
 import com.chh.watchover.domain.chatbot.util.PromptReader;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor // Lombok을 사용하면 생성자 주입이 자동으로 처리됩니다.
@@ -99,6 +100,20 @@ public class ChatService {
         // 프론트가 다음 대화 때 이 방 ID를 쓸 수 있게 넣어줍니다.
         // 만약 방금 생성되었다면 생성된 ID가 나갑니다.
         return chatResponse;
+    }
+
+    @Transactional(readOnly = true) // 단순 조회이므로 readOnly를 붙여주면 성능상 이득이 있습니다.
+    public List<ChatResponse> getChatHistory(Long chatRoomId) {
+        // 1. 해당 방의 모든 메시지를 시간순으로 조회
+        List<MessageEntity> messages = messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(chatRoomId);
+
+        // 2. MessageEntity 리스트를 ChatResponse 리스트로 변환
+        return messages.stream()
+                .map(msg -> ChatResponse.builder()
+                        .chatRoomId(chatRoomId)
+                        .answer(msg.getContent()) // DB에 저장된 메시지 내용
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private void saveMessage(ChatRoomEntity chatRoom, Role role, String content) {
