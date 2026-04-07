@@ -1,10 +1,9 @@
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useNavigation } from '@react-navigation/native';
+import { useState } from 'react';
 import {
   Alert,
   Keyboard,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,18 +12,19 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
-} from "react-native";
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Login = () => {
-  const router = useRouter();
-  const [loginId, setLoginId] = useState("");
-  const [loginPw, setLoginPw] = useState("");
+  const navigation = useNavigation();
+  const [loginId, setLoginId] = useState('');
+  const [loginPw, setLoginPw] = useState('');
 
   const handleLogin = () => {
     if (loginId && loginPw) {
-      router.replace("/home/");
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } else {
-      Alert.alert("알림", "아이디와 비밀번호를 입력해주세요.");
+      Alert.alert('알림', '아이디와 비밀번호를 입력해주세요.');
     }
   };
 
@@ -32,18 +32,14 @@ const Login = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* ✅ 1. KeyboardAvoidingView를 제거하여 화면 전체 리사이징을 막습니다. */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
-          // ✅ 2. flexGrow: 1과 justifyContent: "center"를 유지하여 중앙 정렬을 고정합니다.
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* 로고 영역 */}
           <Text style={styles.loginLogo}>Cares.</Text>
 
-          {/* 로그인 폼 영역 */}
           <View style={styles.loginForm}>
             <View style={styles.inputGroup}>
               <TextInput
@@ -76,9 +72,8 @@ const Login = () => {
             </TouchableOpacity>
           </View>
 
-          {/* 푸터 영역 */}
           <View style={styles.loginFooter}>
-            <TouchableOpacity onPress={() => router.push("/auth/Signup")}>
+            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
               <Text style={styles.footerText}>회원가입</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
@@ -97,78 +92,75 @@ export default Login;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
   },
   scrollContent: {
-    // ✅ 중앙 정렬 유지
     flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 30,
     paddingBottom: 40,
   },
   loginLogo: {
     fontSize: 48,
-    fontWeight: "900",
-    color: "#5AA9E6",
+    fontWeight: '900',
+    color: '#5AA9E6',
     marginBottom: 50,
     letterSpacing: -2,
   },
   loginForm: {
-    width: "100%",
+    width: '100%',
     maxWidth: 400,
   },
   inputGroup: {
     marginBottom: 15,
-    width: "100%",
+    width: '100%',
   },
   input: {
-    width: "100%",
+    width: '100%',
     padding: 16,
     borderWidth: 1,
-    borderColor: "#eeeeee",
+    borderColor: '#eeeeee',
     borderRadius: 12,
     fontSize: 16,
-    backgroundColor: "#F8F9FA",
-    color: "#000",
+    backgroundColor: '#F8F9FA',
+    color: '#000',
   },
   loginBtn: {
-    width: "100%",
+    width: '100%',
     padding: 16,
-    backgroundColor: "#5AA9E6",
+    backgroundColor: '#5AA9E6',
     borderRadius: 12,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 10,
     ...Platform.select({
       ios: {
-        shadowColor: "#5AA9E6",
+        shadowColor: '#5AA9E6',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 12,
       },
-      android: {
-        elevation: 6,
-      },
+      android: { elevation: 6 },
     }),
   },
   loginBtnText: {
-    color: "white",
+    color: 'white',
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: '800',
   },
   loginFooter: {
     marginTop: 30,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 15,
   },
   footerText: {
     fontSize: 14,
-    color: "#8E8E93",
+    color: '#8E8E93',
   },
   divider: {
     width: 1,
     height: 12,
-    backgroundColor: "#D1D1D6",
+    backgroundColor: '#D1D1D6',
   },
 });

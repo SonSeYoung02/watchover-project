@@ -1,69 +1,63 @@
-import React from "react";
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { ChevronLeft, Lock } from 'lucide-react-native';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  SafeAreaView,
-  TouchableOpacity,
   Platform,
+  ScrollView,
   StatusBar,
-} from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router"; // ✅ expo-router 사용
-import { ChevronLeft, Lock } from "lucide-react-native"; // ✅ lucide-react-native 사용
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ChatDetail = () => {
-  const { id } = useLocalSearchParams(); // URL 파라미터(id) 가져오기
-  const router = useRouter();
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { id } = route.params || {};
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* 1. 상단 헤더 */}
+      {/* Standard Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ChevronLeft color="#333" size={24} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <ChevronLeft color="#333" size={28} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>과거 상담 내역</Text>
-        <View style={{ width: 24 }} /> {/* 우측 균형용 빈 공간 */}
+        <Text style={styles.headerTitle}>상담 내역 상세</Text>
+        <View style={{ width: 36 }} />
       </View>
 
-      {/* 2. 채팅 메시지 영역 */}
       <ScrollView
         style={styles.chatMessages}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        {/* 날짜 뱃지 (기록 모드 전용) */}
         <View style={styles.historyDateBadge}>
-          <Text style={styles.dateText}>2026년 4월 7일 기록</Text>
+          <Text style={styles.dateText}>2025.11.20 대화 기록</Text>
         </View>
 
-        {/* AI 메시지 예시 */}
         <View style={[styles.messageRow, styles.aiRow]}>
           <View style={styles.aiAvatar}>
             <Text style={styles.avatarText}>AI</Text>
           </View>
           <View style={[styles.bubble, styles.aiBubble]}>
-            <Text style={styles.aiText}>
-              당시 나눈 대화 내용입니다. (기록 ID: {id})
-            </Text>
+            <Text style={[styles.messageText, styles.aiText]}>당시 나눈 대화 내용입니다. (관련 기록 ID: {id})</Text>
           </View>
         </View>
 
-        {/* 유저 메시지 예시 */}
         <View style={[styles.messageRow, styles.userRow]}>
           <View style={[styles.bubble, styles.userBubble]}>
-            <Text style={styles.userText}>정말 고마웠어!</Text>
+            <Text style={[styles.messageText, styles.userText]}>정말 고마웠어! 다음에 또 보자.</Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* 3. 하단 종료 안내창 (입력창 대신 노출) */}
       <View style={styles.detailFooterWrapper}>
         <View style={styles.detailFooterBubble}>
-          <Lock size={14} color="#999" />
-          <Text style={styles.footerText}>이 대화는 종료된 기록입니다.</Text>
+          <Lock size={14} color="#94A3B8" />
+          <Text style={styles.footerText}>종료된 상담 기록입니다.</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -73,109 +67,85 @@ const ChatDetail = () => {
 export default ChatDetail;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   header: {
     height: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: "#eeeeee",
-    marginTop: Platform.OS === "android" ? 30 : 0,
+    borderBottomColor: '#eeeeee',
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#000000",
-  },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#111111' },
   backBtn: { padding: 4 },
 
-  chatMessages: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 100, // 푸터 높이만큼 여백
-  },
+  chatMessages: { flex: 1, backgroundColor: '#F8FAFC' },
+  scrollContent: { padding: 20, paddingBottom: 120 },
+
   historyDateBadge: {
-    alignSelf: "center",
-    backgroundColor: "#eeeeee",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginVertical: 15,
+    alignSelf: 'center',
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginVertical: 20,
   },
-  dateText: {
-    fontSize: 11,
-    color: "#888",
-  },
-  messageRow: {
-    flexDirection: "row",
-    marginBottom: 20,
-    maxWidth: "85%",
-  },
-  aiRow: { alignSelf: "flex-start" },
-  userRow: {
-    alignSelf: "flex-end",
-    flexDirection: "row-reverse",
-  },
+  dateText: { fontSize: 12, fontWeight: '700', color: '#64748B' },
+
+  messageRow: { flexDirection: 'row', marginBottom: 24, maxWidth: '85%' },
+  aiRow: { alignSelf: 'flex-start' },
+  userRow: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
+
   aiAvatar: {
-    width: 36,
-    height: 36,
-    backgroundColor: "#f1f3f5",
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
+    width: 38, height: 38, backgroundColor: '#E0F2FE', borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center', marginRight: 10,
+    borderWidth: 1, borderColor: '#BAE6FD',
   },
-  avatarText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#888",
-  },
+  avatarText: { fontSize: 11, fontWeight: '800', color: '#0EA5E9' },
+
   bubble: {
-    padding: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    padding: 14,
+    paddingHorizontal: 18,
+    borderRadius: 22,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 5 },
+      android: { elevation: 1 },
+    }),
   },
   aiBubble: {
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: "#eeeeee", // 상세 모드라 더 연하게 설정
-    borderTopLeftRadius: 0,
+    borderColor: '#F1F5F9',
+    borderTopLeftRadius: 4,
   },
   userBubble: {
-    backgroundColor: "#4A90E2",
-    borderTopRightRadius: 0,
+    backgroundColor: '#5AA9E6',
+    borderTopRightRadius: 4,
   },
-  aiText: { fontSize: 14, color: "#333" },
-  userText: { fontSize: 14, color: "#ffffff" },
 
-  // ✅ 하단 종료 안내바 스타일
+  messageText: { fontSize: 15, lineHeight: 22 },
+  aiText: { color: '#334155', fontWeight: '500' },
+  userText: { color: '#ffffff', fontWeight: '600' },
+
   detailFooterWrapper: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#f9f9f9",
-    paddingTop: 15,
-    paddingBottom: Platform.OS === "ios" ? 35 : 20, // 하단 세이프 에어리어 대응
+    paddingVertical: 15,
+    backgroundColor: '#ffffff',
     borderTopWidth: 1,
-    borderTopColor: "#eeeeee",
-    alignItems: "center",
+    borderTopColor: '#F1F5F9',
+    alignItems: 'center',
+    paddingBottom: Platform.OS === 'ios' ? 35 : 20,
   },
   detailFooterBubble: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 8
   },
-  footerText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#999",
-  },
+  footerText: { fontSize: 13, fontWeight: '700', color: '#64748B' },
 });

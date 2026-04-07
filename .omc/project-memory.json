@@ -1,0 +1,89 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775562833052,
+  "projectRoot": "D:\\Spring\\watchover\\watchover",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "backend": {
+      "path": "backend",
+      "purpose": null,
+      "fileCount": 10,
+      "lastAccessed": 1775562833014,
+      "keyFiles": [
+        "build.gradle",
+        "dev.env",
+        "gradlew",
+        "gradlew.bat",
+        "LICENSE"
+      ]
+    },
+    "frontend": {
+      "path": "frontend",
+      "purpose": null,
+      "fileCount": 10,
+      "lastAccessed": 1775562833017,
+      "keyFiles": [
+        "AGENTS.md",
+        "app.json",
+        "babel.config.js",
+        "eslint.config.js",
+        "index.js"
+      ]
+    },
+    "backend\\build": {
+      "path": "backend\\build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1775562833018,
+      "keyFiles": []
+    },
+    "frontend\\app": {
+      "path": "frontend\\app",
+      "purpose": "Application code",
+      "fileCount": 4,
+      "lastAccessed": 1775562833019,
+      "keyFiles": [
+        "AGENTS.md",
+        "AppNavigator.jsx",
+        "modal.jsx"
+      ]
+    },
+    "frontend\\assets": {
+      "path": "frontend\\assets",
+      "purpose": "Static assets",
+      "fileCount": 0,
+      "lastAccessed": 1775562833020,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [],
+  "userDirectives": []
+}

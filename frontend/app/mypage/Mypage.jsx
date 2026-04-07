@@ -1,119 +1,204 @@
-import { useRouter } from "expo-router";
+import { useNavigation } from '@react-navigation/native';
 import {
+  Bell,
   BookOpen,
   ChevronLeft,
   ChevronRight,
   Headphones,
   Heart,
   HelpCircle,
+  Lock,
+  LogOut,
+  Shield,
   Settings as SettingsIcon,
-} from "lucide-react-native";
-import { useState } from "react";
+} from 'lucide-react-native';
+import { useState } from 'react';
 import {
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const MyPage = () => {
-  const router = useRouter();
+  const navigation = useNavigation();
 
-  // 임시 유저 데이터
+  // Integrated User Info & Settings State
   const [userInfo] = useState({
-    nickname: "김범진",
-    points: 1250,
-    email: "example@care.com",
+    nickname: 'TestUser',
+    email: 'example@care.com',
   });
+
+  const [settings, setSettings] = useState({
+    chatbot: true,
+    community: true,
+    nightPush: false,
+    appLock: false,
+    faceId: false,
+  });
+
+  const toggleSetting = (key) => {
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Reusable Toggle Component
+  const ToggleSwitch = ({ isOn, onToggle }) => (
+    <TouchableOpacity
+      style={[styles.toggleSwitch, isOn ? styles.toggleOn : styles.toggleOff]}
+      onPress={onToggle}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.toggleHandle, isOn ? styles.handleOn : styles.handleOff]} />
+      <Text style={[styles.toggleLabel, isOn ? styles.labelOn : styles.labelOff]}>
+        {isOn ? 'ON' : 'OFF'}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* 1. 상단 헤더 */}
+      {/* Header - Unified without Settings button */}
       <View style={styles.header}>
-        {/* 왼쪽: 뒤로가기 버튼 */}
         <TouchableOpacity
-          // ✅ 실제 홈 화면 경로인 /home (home/index.jsx)으로 이동
-          onPress={() => router.replace("/home")}
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
           style={styles.backBtn}
         >
           <ChevronLeft size={28} color="#333" />
         </TouchableOpacity>
-
-        {/* 가운데: 타이틀 (중앙 정렬) */}
-        <Text style={styles.headerTitle}>내 공간</Text>
-
-        {/* 오른쪽: 설정 버튼 */}
-        <TouchableOpacity
-          onPress={() => router.push("/mypage/Settings")}
-          style={styles.settingsBtn}
-        >
-          <SettingsIcon size={24} color="#5AA9E6" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>내 정보</Text>
+        <View style={{ width: 36 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* 2. 프로필 카드 섹션 */}
+        {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.profileCard}>
-            <View style={styles.profileAvatar} />
+            <View style={styles.profileAvatar}>
+              <User color="#ffffff" size={32} />
+            </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.userRank}>일반 회원</Text>
               <Text style={styles.userName}>{userInfo.nickname} 님</Text>
               <Text style={styles.userEmail}>{userInfo.email}</Text>
             </View>
           </View>
-
-          <View style={styles.pointBox}>
-            <Text style={styles.pointLabel}>보유 포인트</Text>
-            <Text style={styles.pointValue}>
-              {userInfo.points.toLocaleString()} P
-            </Text>
-          </View>
         </View>
 
-        {/* 3. 주요 메뉴 리스트 */}
         <View style={styles.mypageContent}>
-          {/* 활동 내역 그룹 */}
+          {/* Activity Section */}
           <View style={styles.menuGroup}>
             <Text style={styles.groupTitle}>활동 내역</Text>
             <TouchableOpacity style={styles.menuItemCard} activeOpacity={0.7}>
               <View style={styles.menuLeft}>
-                <Heart size={20} color="#FF5A5F" fill="#FF5A5F" />
+                <View style={[styles.iconWrapper, { backgroundColor: '#FFF0F0' }]}>
+                  <Heart size={20} color="#FF5A5F" fill="#FF5A5F" />
+                </View>
                 <Text style={styles.menuText}>좋아요 한 명언</Text>
               </View>
-              <ChevronRight size={18} color="#ccc" />
+              <ChevronRight size={18} color="#cccccc" />
             </TouchableOpacity>
           </View>
 
-          {/* 고객 지원 그룹 */}
+          {/* Notification Settings Section */}
+          <View style={styles.menuGroup}>
+            <Text style={styles.groupTitle}>알림 설정</Text>
+            <View style={styles.settingsContainer}>
+              <View style={styles.settingItem}>
+                <View style={styles.settingText}>
+                  <Text style={styles.itemLabel}>챗봇 알림</Text>
+                  <Text style={styles.itemSub}>실시간 대화 알림 받기</Text>
+                </View>
+                <ToggleSwitch isOn={settings.chatbot} onToggle={() => toggleSetting('chatbot')} />
+              </View>
+              <View style={styles.settingItem}>
+                <View style={styles.settingText}>
+                  <Text style={styles.itemLabel}>커뮤니티 알림</Text>
+                  <Text style={styles.itemSub}>게시글 활동 소식 받기</Text>
+                </View>
+                <ToggleSwitch isOn={settings.community} onToggle={() => toggleSetting('community')} />
+              </View>
+              <View style={styles.settingItem}>
+                <View style={styles.settingText}>
+                  <Text style={styles.itemLabel}>야간 푸시 알림</Text>
+                  <Text style={styles.itemSub}>밤 9시 이후 소식 받기</Text>
+                </View>
+                <ToggleSwitch isOn={settings.nightPush} onToggle={() => toggleSetting('nightPush')} />
+              </View>
+            </View>
+          </View>
+
+          {/* Security Section */}
+          <View style={styles.menuGroup}>
+            <Text style={styles.groupTitle}>보안 설정</Text>
+            <View style={styles.settingsContainer}>
+              <View style={styles.settingItem}>
+                <View style={styles.settingText}>
+                  <Text style={styles.itemLabel}>앱 잠금 사용</Text>
+                </View>
+                <ToggleSwitch isOn={settings.appLock} onToggle={() => toggleSetting('appLock')} />
+              </View>
+              <View style={styles.settingItem}>
+                <View style={styles.settingText}>
+                  <Text style={styles.itemLabel}>Face ID / 지문</Text>
+                </View>
+                <ToggleSwitch isOn={settings.faceId} onToggle={() => toggleSetting('faceId')} />
+              </View>
+              <TouchableOpacity style={[styles.settingItem, { marginBottom: 0 }]}>
+                <Text style={styles.itemLabel}>비밀번호 변경</Text>
+                <ChevronRight size={18} color="#cccccc" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Customer Support Section */}
           <View style={styles.menuGroup}>
             <Text style={styles.groupTitle}>고객 지원</Text>
-
             <TouchableOpacity style={styles.menuItemCard} activeOpacity={0.7}>
               <View style={styles.menuLeft}>
-                <BookOpen size={20} color="#5AA9E6" />
+                <View style={[styles.iconWrapper, { backgroundColor: '#F0F7FF' }]}>
+                  <BookOpen size={20} color="#5AA9E6" />
+                </View>
                 <Text style={styles.menuText}>Cares. 이용 가이드</Text>
               </View>
-              <ChevronRight size={18} color="#ccc" />
+              <ChevronRight size={18} color="#cccccc" />
             </TouchableOpacity>
 
             <View style={styles.rowMenu}>
               <TouchableOpacity style={styles.halfCard} activeOpacity={0.7}>
-                <HelpCircle size={22} color="#A3D2F3" />
+                <View style={[styles.iconWrapper, { backgroundColor: '#F0F7FF', marginBottom: 12 }]}>
+                  <HelpCircle size={22} color="#5AA9E6" />
+                </View>
                 <Text style={styles.halfCardText}>자주 묻는 질문</Text>
               </TouchableOpacity>
-
               <TouchableOpacity style={styles.halfCard} activeOpacity={0.7}>
-                <Headphones size={22} color="#A3D2F3" />
+                <View style={[styles.iconWrapper, { backgroundColor: '#F0F7FF', marginBottom: 12 }]}>
+                  <Headphones size={22} color="#5AA9E6" />
+                </View>
                 <Text style={styles.halfCardText}>1:1 문의하기</Text>
               </TouchableOpacity>
             </View>
+          </View>
+
+          {/* Footer App Info Section */}
+          <View style={[styles.menuGroup, { marginBottom: 60 }]}>
+            <Text style={styles.groupTitle}>기타</Text>
+            <TouchableOpacity style={styles.footerActionItem}>
+              <Text style={styles.footerActionText}>캐시 데이터 삭제</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.footerActionItem}>
+              <Text style={styles.footerActionText}>서비스 이용 약관</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.footerActionItem}>
+              <View style={styles.logoutBtn}>
+                <LogOut size={18} color="#FF5A5F" />
+                <Text style={styles.logoutText}>로그아웃</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -123,169 +208,92 @@ const MyPage = () => {
 
 export default MyPage;
 
+const User = ({ color, size }) => (
+  <SettingsIcon color={color} size={size} /> // Placeholder fallback
+);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 15,
-    height: 60,
-    backgroundColor: "#ffffff",
-    marginTop: Platform.OS === "android" ? 30 : 0,
+    height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#eeeeee',
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
-  backBtn: {
-    width: 40,
-    alignItems: "flex-start",
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: "900",
-    color: "#333",
-  },
-  settingsBtn: {
-    width: 40,
-    alignItems: "flex-end",
-  },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#111111' },
+  backBtn: { padding: 4 },
+
   profileSection: {
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 20,
-    paddingBottom: 25,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.03,
-        shadowRadius: 15,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10,
   },
   profileCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 20,
+    flexDirection: 'row', alignItems: 'center',
   },
   profileAvatar: {
-    width: 70,
-    height: 70,
-    backgroundColor: "#FFE45E",
-    borderRadius: 35,
-    marginRight: 20,
+    width: 64, height: 64, backgroundColor: '#5AA9E6', borderRadius: 32,
+    marginRight: 16, justifyContent: 'center', alignItems: 'center'
   },
-  userRank: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#FF5A5F",
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#333",
-    marginBottom: 2,
-  },
-  userEmail: {
-    fontSize: 13,
-    color: "#8E8E93",
-  },
-  pointBox: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#A3D2F3",
-    padding: 15,
-    paddingHorizontal: 20,
-    borderRadius: 15,
-  },
-  pointLabel: {
-    color: "#ffffff",
-    fontWeight: "700",
-  },
-  pointValue: {
-    fontSize: 18,
-    color: "#ffffff",
-    fontWeight: "700",
-  },
-  mypageContent: {
-    padding: 25,
-    paddingHorizontal: 20,
-  },
-  menuGroup: {
-    marginBottom: 30,
-  },
-  groupTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#8E8E93",
-    marginBottom: 12,
-    paddingLeft: 5,
-  },
+  userName: { fontSize: 24, fontWeight: '800', color: '#111111', marginBottom: 2 },
+  userEmail: { fontSize: 14, color: '#888888' },
+
+  mypageContent: { paddingHorizontal: 20, paddingBottom: 40, marginTop: 24 },
+  menuGroup: { marginBottom: 40 },
+  groupTitle: { fontSize: 14, fontWeight: '800', color: '#999999', marginBottom: 16, paddingLeft: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  // Card Styles
   menuItemCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    padding: 18,
-    borderRadius: 15,
-    marginBottom: 10,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: '#ffffff', padding: 16, borderRadius: 18, marginBottom: 12,
+    borderWidth: 1, borderColor: '#f0f0f0',
     ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 2,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8 },
+      android: { elevation: 1 },
     }),
   },
-  menuLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+  menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconWrapper: {
+    width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center'
   },
-  menuText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#333",
-  },
-  rowMenu: {
-    flexDirection: "row",
-    gap: 10,
-  },
+  menuText: { fontSize: 16, fontWeight: '700', color: '#333333' },
+
+  rowMenu: { flexDirection: 'row', gap: 12 },
   halfCard: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    padding: 20,
-    borderRadius: 15,
-    alignItems: "center",
-    gap: 10,
+    flex: 1, backgroundColor: '#ffffff', padding: 20, borderRadius: 18,
+    alignItems: 'center', borderWidth: 1, borderColor: '#f0f0f0',
     ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 2,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8 },
+      android: { elevation: 1 },
     }),
   },
-  halfCardText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#333",
+  halfCardText: { fontSize: 14, fontWeight: '700', color: '#333333', textAlign: 'center' },
+
+  // Settings Integrated Styles
+  settingsContainer: {
+    backgroundColor: '#ffffff', padding: 20, borderRadius: 18,
+    borderWidth: 1, borderColor: '#f0f0f0',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8 },
+      android: { elevation: 1 },
+    }),
   },
+  settingItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  settingText: { flex: 1, marginRight: 16 },
+  itemLabel: { fontSize: 16, fontWeight: '700', color: '#333333' },
+  itemSub: { fontSize: 13, color: '#999999', marginTop: 4 },
+
+  // Toggle Switch Styles
+  toggleSwitch: { width: 52, height: 26, borderRadius: 13, paddingHorizontal: 4, justifyContent: 'center' },
+  toggleOn: { backgroundColor: '#5AA9E6' },
+  toggleOff: { backgroundColor: '#E5E5EA' },
+  toggleHandle: { width: 20, height: 20, backgroundColor: '#ffffff', borderRadius: 10, position: 'absolute' },
+  handleOn: { right: 4 },
+  handleOff: { left: 4 },
+  toggleLabel: { fontSize: 8, fontWeight: '900', color: '#ffffff', position: 'absolute' },
+  labelOn: { left: 8 },
+  labelOff: { right: 8, color: '#aaaaaa' },
+
+  // Footer Actions
+  footerActionItem: { paddingVertical: 12, paddingHorizontal: 4, marginBottom: 8 },
+  footerActionText: { fontSize: 15, fontWeight: '600', color: '#666666' },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  logoutText: { fontSize: 15, fontWeight: '700', color: '#FF5A5F' },
 });
