@@ -1,60 +1,50 @@
-import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
-import { useState } from "react";
+import { useNavigation } from '@react-navigation/native';
+import { ChevronLeft } from 'lucide-react-native';
+import { useState } from 'react';
 import {
   Image,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 export default function CharacterIndex() {
-  const router = useRouter();
+  const navigation = useNavigation();
   const [image, setImage] = useState(null);
 
-  const pickImage = async () => {
-    try {
-      // ✅ 라이브러리 버전에 상관없이 가장 안전한 'images' 문자열 사용
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: "images",
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.log("사진 선택 에러:", error);
-    }
+  const pickImage = () => {
+    launchImageLibrary(
+      { mediaType: 'photo', quality: 1, selectionLimit: 1 },
+      (response) => {
+        if (!response.didCancel && !response.errorCode && response.assets?.[0]) {
+          setImage(response.assets[0].uri);
+        }
+      },
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ChevronLeft color="#333" size={28} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <ChevronLeft size={28} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>나만의 캐릭터 만들기</Text>
-        <View style={{ width: 28 }} />
+        <Text style={styles.headerTitle}>캐릭터</Text>
+        <View style={{ width: 36 }} />
       </View>
 
       <View style={styles.content}>
-        {/* 사진 업로드 박스 */}
-        <TouchableOpacity
-          style={styles.uploadBox}
-          onPress={pickImage}
-          activeOpacity={0.7}
-        >
+        <Text style={styles.pageTitle}>나만의 캐릭터 만들기</Text>
+        <Text style={styles.pageSubtitle}>본인의 얼굴이 잘 나온 사진을 올려주세요</Text>
+
+        <TouchableOpacity style={styles.uploadCard} onPress={pickImage} activeOpacity={0.7}>
           {image ? (
             <Image source={{ uri: image }} style={styles.img} />
           ) : (
@@ -63,26 +53,14 @@ export default function CharacterIndex() {
                 <Text style={styles.plusText}>+</Text>
               </View>
               <Text style={styles.uploadBoxText}>사진 업로드</Text>
+              <Text style={styles.uploadBoxSub}>탭하여 갤러리에서 선택</Text>
             </View>
           )}
         </TouchableOpacity>
 
-        {/* 안내 문구 */}
-        <View style={styles.infoTextGroup}>
-          <Text style={styles.mainInfoText}>
-            본인의 얼굴이 잘 나온{"\n"}사진을 올려주세요.
-          </Text>
-        </View>
-
-        {/* ✅ 캐릭터 생성하기 버튼: 사진 유무와 상관없이 클릭 시 바로 이동 */}
         <TouchableOpacity
-          style={styles.genBtn} // disabled 스타일 제거하여 항상 활성화 상태로 표시
-          onPress={() => {
-            router.push({
-              pathname: "/character/create",
-              params: { userPhoto: image }, // 사진이 없으면 null이 전달됨
-            });
-          }}
+          style={styles.genBtn}
+          onPress={() => navigation.navigate('CharacterCreate', { userPhoto: image })}
           activeOpacity={0.8}
         >
           <Text style={styles.btnText}>캐릭터 생성하기</Text>
@@ -93,66 +71,110 @@ export default function CharacterIndex() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? 50 : 10,
-    height: Platform.OS === "android" ? 100 : 60,
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
   },
-  headerTitle: { fontSize: 18, fontWeight: "bold", color: "#111" },
-  backBtn: { padding: 4 },
+  header: {
+    height: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+    marginTop: Platform.OS === 'android' ? 30 : 0,
+  },
+  backBtn: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
+    color: '#111111',
+    fontWeight: '800',
+  },
   content: {
     flex: 1,
-    alignItems: "center",
-    paddingHorizontal: 30,
-    paddingTop: 40,
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
-  uploadBox: {
-    width: "100%",
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#333333',
+    marginBottom: 6,
+  },
+  pageSubtitle: {
+    fontSize: 14,
+    color: '#888888',
+    marginBottom: 24,
+  },
+  uploadCard: {
+    width: '100%',
     aspectRatio: 1,
-    backgroundColor: "#E6F4FE",
+    backgroundColor: '#E6E6EA',
     borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 30,
-    overflow: "hidden",
     borderWidth: 1.5,
-    borderColor: "#A2CFFE",
-    borderStyle: "dashed",
+    borderColor: '#D1D1D6',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    marginBottom: 20,
   },
-  img: { width: "100%", height: "100%", resizeMode: "cover" },
-  placeholder: { alignItems: "center" },
+  img: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholder: {
+    alignItems: 'center',
+  },
   plusCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#D1D1D6",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 15,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#5AA9E6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  plusText: { fontSize: 40, color: "#fff", fontWeight: "300" },
-  uploadBoxText: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  infoTextGroup: { marginBottom: 20, alignItems: "center" },
-  mainInfoText: {
+  plusText: {
+    fontSize: 36,
+    color: '#ffffff',
+    fontWeight: '300',
+  },
+  uploadBoxText: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#333",
-    textAlign: "center",
-    lineHeight: 22,
+    fontWeight: '800',
+    color: '#333333',
+    marginBottom: 4,
+  },
+  uploadBoxSub: {
+    fontSize: 12,
+    color: '#888888',
   },
   genBtn: {
-    backgroundColor: "#82C9F9", // 항상 활성화된 색상
-    width: "100%",
-    height: 56,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: "auto",
+    width: '100%',
+    paddingVertical: 16,
+    backgroundColor: '#5AA9E6',
+    borderRadius: 20,
+    alignItems: 'center',
+    marginTop: 'auto',
     marginBottom: 40,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#5AA9E6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: { elevation: 6 },
+    }),
   },
-  btnText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  btnText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
 });

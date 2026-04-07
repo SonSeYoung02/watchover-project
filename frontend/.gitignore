@@ -1,0 +1,524 @@
+# 생성 도구: https://www.toptal.com/developers/gitignore/api/reactnative,visualstudiocode,node,android,androidstudio,gradle
+
+### Android ###
+# Gradle 빌드 파일
+.gradle/
+build/
+
+# 로컬 설정 파일 (SDK 경로 등)
+local.properties
+
+# 로그/OS 파일
+*.log
+
+# Android Studio 생성 파일 및 폴더
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+output.json
+
+# IntelliJ 설정 파일
+*.iml
+.idea/
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+
+# 키스토어 파일
+*.jks
+*.keystore
+
+# Google 서비스 파일 (API, Firebase 등)
+google-services.json
+
+# Android 프로파일링
+*.hprof
+
+### Android Patch ###
+gen-external-apklibs
+
+### Node ###
+# 로그 파일
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# 진단 보고서 (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# 런타임 데이터
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# jscoverage/JSCover가 생성하는 계측 라이브러리 디렉토리
+lib-cov
+
+# istanbul 등 테스트 커버리지 도구가 사용하는 디렉토리
+coverage
+*.lcov
+
+# nyc 테스트 커버리지
+.nyc_output
+
+# Grunt 중간 저장소 (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower 의존성 디렉토리 (https://bower.io/)
+bower_components
+
+# node-waf 설정
+.lock-wscript
+
+# 컴파일된 바이너리 애드온 (https://nodejs.org/api/addons.html)
+build/Release
+
+# 의존성 디렉토리
+node_modules/
+jspm_packages/
+
+# Snowpack 의존성 디렉토리 (https://snowpack.dev/)
+web_modules/
+
+# TypeScript 캐시
+*.tsbuildinfo
+
+# npm 캐시 디렉토리 (선택적)
+.npm
+
+# ESLint 캐시 (선택적)
+.eslintcache
+
+# Stylelint 캐시 (선택적)
+.stylelintcache
+
+# Microbundle 캐시
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# REPL 히스토리 (선택적)
+.node_repl_history
+
+# npm pack 결과물
+*.tgz
+
+# Yarn 무결성 파일
+.yarn-integrity
+
+# dotenv 환경변수 파일
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# parcel 번들러 캐시 (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js 빌드 결과물
+.next
+out
+
+# Nuxt.js 빌드/생성 결과물
+.nuxt
+dist
+
+# Gatsby 파일
+.cache/
+# Gatsby 프로젝트에서 public 폴더를 무시하려면 아래 주석 해제
+# (Next.js 프로젝트는 해제하지 말 것)
+# public
+
+# VuePress 빌드 결과물
+.vuepress/dist
+
+# VuePress v2.x 임시 및 캐시 디렉토리
+.temp
+
+# Docusaurus 캐시 및 생성 파일
+.docusaurus
+
+# Serverless 디렉토리
+.serverless/
+
+# FuseBox 캐시
+.fusebox/
+
+# DynamoDB 로컬 파일
+.dynamodb/
+
+# TernJS 포트 파일
+.tern-port
+
+# VSCode 확장 테스트에 사용되는 VSCode 버전 정보
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+### 도구 ###
+# 개인 설정 파일
+.claude/
+# omc
+.omc/
+# AI 에이전트 가이드 파일
+AGENTS.md
+
+### Node Patch ###
+# Serverless Webpack 디렉토리
+.webpack/
+
+# SvelteKit 빌드/생성 결과물
+.svelte-kit
+
+### ReactNative ###
+# React Native 기본 스택
+
+.expo
+__generated__
+
+### ReactNative macOS 스택 ###
+# 일반 macOS 파일
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 아이콘 파일 (두 개의 \r로 끝나야 함)
+Icon
+
+
+# 썸네일 파일
+._*
+
+# 볼륨 루트에 나타날 수 있는 파일
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# AFP 원격 공유에서 생성될 수 있는 디렉토리
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+### ReactNative Android 스택 ###
+# Gradle 파일
+
+# 로컬 설정 파일 (SDK 경로 등)
+
+# 로그/OS 파일
+
+# Android Studio 생성 파일 및 폴더
+
+# IntelliJ
+
+# 키스토어 파일
+
+# Google 서비스 파일
+
+# Android 프로파일링
+
+### ReactNative Gradle 스택 ###
+.gradle
+**/build/
+!src/**/build/
+
+# Gradle GUI 설정 무시
+gradle-app.setting
+
+# Gradle 래퍼 jar 파일은 무시하지 않음 (.jar 파일은 보통 무시됨)
+!gradle-wrapper.jar
+
+# Gradle 래퍼 properties 파일은 무시하지 않음
+!gradle-wrapper.properties
+
+# 프로젝트 캐시
+.gradletasknamecache
+
+# Eclipse Gradle 플러그인 생성 파일
+# Eclipse Core
+.project
+# JDT (Eclipse Java 개발 도구)
+.classpath
+
+### ReactNative Xcode 스택 ###
+# 사용자 설정
+xcuserdata/
+
+# Xcode 8 이하
+*.xcscmblueprint
+*.xccheckout
+
+### ReactNative Linux 스택 ###
+*~
+
+# 삭제된 파일의 핸들이 아직 열려 있을 때 생성되는 임시 파일
+.fuse_hidden*
+
+# KDE 디렉토리 설정
+.directory
+
+# 모든 파티션/디스크에 나타날 수 있는 Linux 휴지통 폴더
+.Trash-*
+
+# 열린 파일이 삭제될 때 생성되는 NFS 파일
+.nfs*
+
+### ReactNative Node 스택 ###
+# 로그
+
+# 진단 보고서
+
+# 런타임 데이터
+
+# 계측 라이브러리 디렉토리
+
+# 테스트 커버리지 디렉토리
+
+# nyc 테스트 커버리지
+
+# Grunt 중간 저장소
+
+# Bower 의존성 디렉토리
+
+# node-waf 설정
+
+# 컴파일된 바이너리 애드온
+
+# 의존성 디렉토리
+
+# Snowpack 의존성 디렉토리
+
+# TypeScript 캐시
+
+# npm 캐시 디렉토리
+
+# ESLint 캐시
+
+# Stylelint 캐시
+
+# Microbundle 캐시
+
+# REPL 히스토리
+
+# npm pack 결과물
+
+# Yarn 무결성 파일
+
+# dotenv 환경변수 파일
+
+# parcel 번들러 캐시
+
+# Next.js 빌드 결과물
+
+# Nuxt.js 빌드/생성 결과물
+
+# Gatsby 파일
+# Gatsby 프로젝트에서 public 폴더를 무시하려면 아래 주석 해제
+# (Next.js 프로젝트는 해제하지 말 것)
+# public
+
+# VuePress 빌드 결과물
+
+# VuePress v2.x 임시 및 캐시 디렉토리
+
+# Docusaurus 캐시 및 생성 파일
+
+# Serverless 디렉토리
+
+# FuseBox 캐시
+
+# DynamoDB 로컬 파일
+
+# TernJS 포트 파일
+
+# VSCode 확장 테스트 버전 정보
+
+# yarn v2
+
+### ReactNative Buck 스택 ###
+buck-out/
+.buckconfig.local
+.buckd/
+.buckversion
+.fakebuckversion
+
+### Visual Studio Code ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Visual Studio Code 로컬 히스토리
+.history/
+
+# 빌드된 VSCode 확장 파일
+*.vsix
+
+### Visual Studio Code Patch ###
+# 모든 로컬 파일 히스토리 무시
+.history
+.ionide
+
+### Gradle ###
+
+# Gradle GUI 설정 무시
+
+# Gradle 래퍼 jar 파일은 무시하지 않음
+
+# Gradle 래퍼 properties 파일은 무시하지 않음
+
+# 프로젝트 캐시
+
+# Eclipse Gradle 플러그인 생성 파일
+# Eclipse Core
+# JDT (Eclipse Java 개발 도구)
+
+### Gradle Patch ###
+# Java 힙 덤프
+
+### Android Studio ###
+# Android Studio를 사용한 안드로이드 개발 시 무시할 파일 목록
+
+# 빌드된 앱 파일
+*.ap_
+*.aab
+
+# ART/Dalvik VM 파일
+*.dex
+
+# Java 클래스 파일
+*.class
+
+# 생성된 파일
+bin/
+gen/
+out/
+
+# Gradle 파일
+
+# 서명 파일
+.signing/
+
+# 로컬 설정 파일 (SDK 경로 등)
+
+# Eclipse에서 생성된 Proguard 폴더
+proguard/
+
+# 로그 파일
+
+# Android Studio
+/*/build/
+/*/local.properties
+/*/out
+/*/*/build
+/*/*/production
+.navigation/
+*.ipr
+*.swp
+
+# 키스토어 파일
+
+# Google 서비스 파일
+# google-services.json
+
+# Android Patch
+
+# Android Studio 2.2 이상에서 생성되는 외부 네이티브 빌드 폴더
+.externalNativeBuild
+
+# NDK
+obj/
+
+# IntelliJ IDEA
+*.iws
+/out/
+
+# 사용자별 설정
+.idea/caches/
+.idea/libraries/
+.idea/shelf/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/.name
+.idea/compiler.xml
+.idea/copyright/profiles_settings.xml
+.idea/encodings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/scopes/scope_settings.xml
+.idea/dictionaries
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/datasources.xml
+.idea/dataSources.ids
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+.idea/assetWizardSettings.xml
+.idea/gradle.xml
+.idea/jarRepositories.xml
+.idea/navEditor.xml
+
+# 레거시 Eclipse 프로젝트 파일
+.cproject
+.settings/
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# 패키지 파일
+*.war
+*.ear
+
+# JVM 크래시 로그 (참고: http://www.java.com/en/download/help/error_hotspot.xml)
+hs_err_pid*
+
+# 플러그인별 파일:
+
+# mpeltonen/sbt-idea 플러그인
+.idea_modules/
+
+# JIRA 플러그인
+atlassian-ide-plugin.xml
+
+# Mongo Explorer 플러그인
+.idea/mongoSettings.xml
+
+# Crashlytics 플러그인 (Android Studio, IntelliJ 용)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+### Android Studio Patch ###
+
+!/gradle/wrapper/gradle-wrapper.jar
+
+### WebStorm ###
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# 파일 끝 - toptal.com gitignore 기반 + Claude AI 도구 항목 추가
