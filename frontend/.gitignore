@@ -171,8 +171,10 @@ dist
 ### 도구 ###
 # 개인 설정 파일
 .claude/
+
 # omc
-.omc/
+.omc
+
 # AI 에이전트 가이드 파일
 AGENTS.md
 
