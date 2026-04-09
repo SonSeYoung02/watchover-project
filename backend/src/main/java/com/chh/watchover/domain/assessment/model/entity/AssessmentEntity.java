@@ -12,10 +12,11 @@ import lombok.NoArgsConstructor;
 public class AssessmentEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "assessment_id" )
     private Long assessmentId;
 
     @ManyToOne
-    @JoinColumn(name = "userId", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
     @Column(name = "result")

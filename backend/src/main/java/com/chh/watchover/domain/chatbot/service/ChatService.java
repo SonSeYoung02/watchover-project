@@ -39,11 +39,11 @@ public class ChatService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Transactional
-    public ChatResponse getChatResponse(Long userId, Long chatRoomId, String promptFile, String userMessage) {
-        UserEntity user = userRepository.findById(userId)
+    public ChatResponse getChatResponse(String loginId, Long chatRoomId, String promptFile, String userMessage) {
+        UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
-        // 2. 채팅방 존재 확인 및 없으면 자동 생성
+        // 1. 채팅방 존재 확인 및 없으면 자동 생성
         ChatRoomEntity chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseGet(() -> {
                     // 수정된 create 메서드에 user 객체를 전달 ✅
@@ -94,12 +94,14 @@ public class ChatService {
         saveMessage(chatRoom, Role.user, userMessage); // 사용자 질문 저장
         saveMessage(chatRoom, Role.assistant, gptAnswer);    // AI 응답 저장
 
-        // 7. 결과 반환 (ChatResponse DTO 사용) ✅
-        ChatResponse chatResponse = new ChatResponse();
-        chatResponse.setAnswer(gptAnswer);
-        // 프론트가 다음 대화 때 이 방 ID를 쓸 수 있게 넣어줍니다.
-        // 만약 방금 생성되었다면 생성된 ID가 나갑니다.
-        return chatResponse;
+        //Role 필드 추가(필요 시)
+
+        // 7. 결과 반환 (ChatResponse DTO 및 Builder 사용) ✅
+        return ChatResponse.builder()
+                .chatRoomId(chatRoom.getChatRoomId()) // DB에서 생성/조회된 방 ID 세팅
+                .answer(gptAnswer)                   // GPT 답변 세팅
+                .build();
+
     }
 
     @Transactional(readOnly = true) // 단순 조회이므로 readOnly를 붙여주면 성능상 이득이 있습니다.

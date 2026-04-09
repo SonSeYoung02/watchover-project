@@ -7,8 +7,10 @@ import com.chh.watchover.domain.user.repository.UserRepository;
 import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.domain.calendar.service.AnalysisService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,18 +37,19 @@ public class AnalysisController {
         return ApiResponse.success(data);
     }
 
-    @GetMapping("/stats") // 최종 주소: GET /api/calendar/emotion/stats
+    @GetMapping("/stats")
     public ApiResponse<List<EmotionStatResponse>> getMonthlyStats(
-            @RequestParam Long userId, // 테스트를 위해 파라미터로 받음
-            @RequestParam int year,
-            @RequestParam int month) {
+            @AuthenticationPrincipal String loginId) {
 
-        // 1. 유저 정보 조회 (UserRepository 주입 필요)
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+        // 1. 현재 날짜 계산
+        LocalDate now = LocalDate.now();
 
-        // 2. 서비스 호출
-        List<EmotionStatResponse> stats = analysisService.getMonthlyEmotionStats(user, year, month);
+        // 3. 서비스 호출
+        List<EmotionStatResponse> stats = analysisService.getMonthlyEmotionStats(
+                loginId,
+                now.getYear(),
+                now.getMonthValue()
+        );
 
         return ApiResponse.success(stats);
     }

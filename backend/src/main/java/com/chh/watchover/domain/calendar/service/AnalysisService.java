@@ -9,6 +9,7 @@ import com.chh.watchover.domain.calendar.repository.CalendarLogRepository;
 import com.chh.watchover.domain.chatbot.repository.ChatRoomRepository;
 import com.chh.watchover.domain.chatbot.repository.MessageRepository;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
+import com.chh.watchover.domain.user.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ public class AnalysisService {
     @Value("${OPENAI_API_KEY}")
     private String apiKey;
 
+    private final UserRepository userRepository;
     private final MessageRepository messageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final CalendarLogRepository calendarLogRepository;
@@ -108,8 +110,12 @@ public class AnalysisService {
     }
 
     @Transactional(readOnly = true)
-    public List<EmotionStatResponse> getMonthlyEmotionStats(UserEntity user, int year, int month) {
-        // Repository에 작성한 통계 쿼리를 호출합니다.
+    public List<EmotionStatResponse> getMonthlyEmotionStats(String loginId, int year, int month) {
+        // 1. 넘겨받은 식별자로 유저 엔티티 조회
+        UserEntity user = userRepository.findByLoginId(loginId) // 혹은 findByEmail 등 실제 ID 필드에 맞춰 사용
+                .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+
+        // 2. 조회된 유저 객체로 레포지토리 호출
         return calendarLogRepository.getMonthlyStats(user, year, month);
     }
 }
