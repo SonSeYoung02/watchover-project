@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class BannerEntity {
 
     @Id
+    @Column(name = "banner_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long bannerId;
 

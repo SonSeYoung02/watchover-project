@@ -36,9 +36,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-      naming:
-        # [추가] 물리적 이름 매핑 전략을 표준(Standard)으로 고정하여 중복 매핑 방지
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
     show-sql: true
   jwt:
     secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="
