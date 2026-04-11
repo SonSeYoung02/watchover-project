@@ -1,0 +1,7 @@
+{
+  "name": "watchover",
+  "displayName": "WatchOver",
+  "android": {
+    "package": "com.anonymous.watchover"
+  }
+}

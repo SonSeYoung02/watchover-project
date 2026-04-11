@@ -1,19 +1,16 @@
-import { Link } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { Platform, StyleSheet, Text, View } from "react-native"; // View를 여기서 가져와야 합니다.
+import { useNavigation } from '@react-navigation/native';
+import { Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ModalScreen() {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.container}>
+      <StatusBar barStyle={Platform.OS === 'ios' ? 'light-content' : 'default'} />
       <Text style={styles.title}>모달 화면</Text>
-
-      {/* 홈으로 돌아가는 링크 */}
-      <Link href="/" style={styles.link}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.link}>
         <Text style={styles.linkText}>홈으로 돌아가기</Text>
-      </Link>
-
-      {/* 상태바 설정 */}
-      <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -21,21 +18,12 @@ export default function ModalScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
-    fontSize: 14,
-    color: "#2e78b7",
-  },
+  title: { fontSize: 20, fontWeight: 'bold' },
+  link: { marginTop: 15, paddingVertical: 15 },
+  linkText: { fontSize: 14, color: '#2e78b7' },
 });

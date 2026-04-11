@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   ChevronLeft,
   ChevronRight,
@@ -6,100 +6,76 @@ import {
   MessageSquareText,
   Search,
   SquarePen,
-} from "lucide-react-native";
-import React, { useCallback, useMemo, useState } from "react";
+  Heart,
+  Bookmark,
+} from 'lucide-react-native';
+import { useCallback, useMemo, useState, useEffect } from 'react'; // useEffect 추가
 import {
   FlatList,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+  ActivityIndicator, // 로딩 표시용 추가
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-// ✅ 상세 페이지의 실시간 데이터 참조
-import * as PostData from "./post/[post]";
-
-// 전역 상태 관리 (북마크)
-export let globalBookmarkState: { [key: string]: boolean } = {
-  "1": true,
-  "3": true,
-};
+// 우리가 만든 통신 도구 불러오기
+import client from '../api/client';
 
 export default function CommunityScreen() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState("전체글");
-  const tabs = ["전체글", "인기글", "북마크"];
+  const navigation = useNavigation();
+  const [activeTab, setActiveTab] = useState('전체글');
+  const tabs = ['전체글', '인기글', '북마크'];
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // 게시글 초기 데이터
-  const [posts, setPosts] = useState([
-    ...Array.from({ length: 25 }, (_, i) => ({
-      id: `${i + 1}`,
-      title:
-        i === 0
-          ? "리액트 네이티브 너무 재밌네요!"
-          : `게시글 ${i + 1}번 제목입니다.`,
-      author: i === 0 ? "코딩왕" : `작성자${i + 1}`,
-      views: 124 + i,
-      likes: i === 0 ? 15 : i > 15 ? 20 : 5,
-      bookmarks: 5,
-      commentCount: 2,
-      createdAt: "2026.03.27",
-    })),
-  ]);
+  // 1. 더미 데이터 대신 빈 배열로 시작
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ 화면에 포커스될 때마다 상세 페이지에서 변경된 수치(좋아요, 조회수, 댓글, 북마크) 반영
+  // 2. 서버에서 데이터 가져오는 함수
+  const fetchPosts = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // 명세서의 전체 조회 엔드포인트 사용
+      const response = await client.get('/api/community/list');
+      
+      // 팀장님 규칙: { code, message, data } 이므로 response.data.data에 접근
+      if (response.data && response.data.data) {
+        setPosts(response.data.data);
+      }
+    } catch (error) {
+      console.error('게시글 로딩 실패:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // 화면이 포커스될 때마다 새로고침
   useFocusEffect(
     useCallback(() => {
-      setPosts((currentPosts) =>
-        currentPosts.map((post) => {
-          const realLikes =
-            PostData.globalLikeCountState?.[post.id] ?? post.likes;
-          const realViews =
-            PostData.globalViewCountState?.[post.id] ?? post.views;
-
-          // 댓글 개수 반영
-          const realComments =
-            PostData.globalCommentCountState?.[post.id] ??
-            (PostData.globalCommentStore?.[post.id]
-              ? PostData.globalCommentStore[post.id].length
-              : post.commentCount);
-
-          return {
-            ...post,
-            likes: realLikes,
-            views: realViews,
-            commentCount: realComments,
-            isBookmarked: !!globalBookmarkState[post.id],
-            // 북마크 활성화 시 UI상으로 숫자 +1 효과
-            displayBookmarks: globalBookmarkState[post.id]
-              ? post.bookmarks + 1
-              : post.bookmarks,
-          };
-        }),
-      );
-    }, []),
+      fetchPosts();
+    }, [fetchPosts])
   );
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab) => {
     setActiveTab(tab);
     setCurrentPage(1);
   };
 
-  // 탭 필터링
+  // 3. 필터링 로직 (id -> postId로 변경 대응)
   const filteredPosts = useMemo(() => {
-    if (activeTab === "인기글") return posts.filter((p) => p.likes >= 10);
-    if (activeTab === "북마크")
-      return posts.filter((p) => globalBookmarkState[p.id]);
-    return posts;
+    let result = posts;
+    if (activeTab === '인기글') result = posts.filter((p) => (p.likes || 0) >= 10);
+    // 북마크는 서버 데이터의 북마크 여부 필드로 필터링 가능 (명세서 참고)
+    if (activeTab === '북마크') result = posts.filter((p) => p.isBookmarked); 
+    return result;
   }, [activeTab, posts]);
 
-  // 페이지네이션 슬라이싱
   const currentData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredPosts.slice(startIndex, startIndex + itemsPerPage);
@@ -107,33 +83,45 @@ export default function CommunityScreen() {
 
   const totalPages = Math.ceil(filteredPosts.length / itemsPerPage);
 
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.postItem}
-      onPress={() => router.push(`/post/${item.id}`)}
+      // 명세서상 ID가 postId이므로 이를 사용
+      onPress={() => navigation.navigate('PostDetail', { id: item.postId })}
+      activeOpacity={0.7}
     >
-      <View style={styles.postInfoContainer}>
-        <Text style={styles.postTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
+      <View style={styles.postHeaderRow}>
         <Text style={styles.postAuthor}>{item.author}</Text>
-        <View style={styles.postStatsRow}>
-          <Text style={styles.postStatText}>
-            조회 {item.views} | 추천 {item.likes} | 북마크{" "}
-            {item.displayBookmarks ?? item.bookmarks} | {item.createdAt}
-          </Text>
-        </View>
+        <Text style={styles.postDate}>{item.createdAt}</Text>
       </View>
-      <View style={styles.commentCountContainer}>
-        <MessageSquareText size={14} color="#666" />
-        <Text style={styles.commentCountText}>{item.commentCount}</Text>
+
+      <Text style={styles.postTitle} numberOfLines={1}>{item.title}</Text>
+
+      <View style={styles.postFooterRow}>
+        <View style={styles.postStatsGroup}>
+          <View style={styles.statItem}>
+            <MessageSquareText size={14} color="#5AA9E6" />
+            <Text style={[styles.statText, { color: '#5AA9E6' }]}>{item.commentCount || 0}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <Heart size={14} color="#FF5A5F" />
+            <Text style={[styles.statText, { color: '#FF5A5F' }]}>{item.likes || 0}</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Bookmark size={14} color="#FFD700" />
+            <Text style={[styles.statText, { color: '#FFD700' }]}>{item.bookmarks || 0}</Text>
+          </View>
+        </View>
       </View>
     </TouchableOpacity>
   );
 
+  // ... (renderPagination 등 기존 스타일 코드는 그대로 유지)
   const renderPagination = () => {
     if (totalPages <= 1) return null;
-    let pages = [];
+    const pages = [];
     for (let i = 1; i <= totalPages; i++) {
       pages.push(
         <TouchableOpacity
@@ -141,14 +129,7 @@ export default function CommunityScreen() {
           style={[styles.pageBtn, currentPage === i && styles.activePageBtn]}
           onPress={() => setCurrentPage(i)}
         >
-          <Text
-            style={[
-              styles.pageText,
-              currentPage === i && styles.activePageText,
-            ]}
-          >
-            {i}
-          </Text>
+          <Text style={[styles.pageText, currentPage === i && styles.activePageText]}>{i}</Text>
         </TouchableOpacity>,
       );
     }
@@ -159,7 +140,7 @@ export default function CommunityScreen() {
           onPress={() => setCurrentPage(currentPage - 1)}
           style={styles.arrowBtn}
         >
-          <ChevronLeft size={20} color={currentPage === 1 ? "#ccc" : "#333"} />
+          <ChevronLeft size={20} color={currentPage === 1 ? '#ccc' : '#333'} />
         </TouchableOpacity>
         {pages}
         <TouchableOpacity
@@ -167,10 +148,7 @@ export default function CommunityScreen() {
           onPress={() => setCurrentPage(currentPage + 1)}
           style={styles.arrowBtn}
         >
-          <ChevronRight
-            size={20}
-            color={currentPage === totalPages ? "#ccc" : "#333"}
-          />
+          <ChevronRight size={20} color={currentPage === totalPages ? '#ccc' : '#333'} />
         </TouchableOpacity>
       </View>
     );
@@ -180,186 +158,147 @@ export default function CommunityScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* 헤더 영역 */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.headerLeft}
-        >
-          <ChevronLeft color="black" size={24} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <ChevronLeft color="#333" size={28} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>커뮤니티</Text>
         <View style={styles.headerRight}>
-          {/* 검색 버튼 */}
-          <TouchableOpacity onPress={() => router.push("/search")}>
-            <Search color="black" size={24} style={{ marginRight: 15 }} />
+          <TouchableOpacity>
+            <Search color="#333" size={22} style={{ marginRight: 12 }} />
           </TouchableOpacity>
-          {/* ✅ 검색 오른쪽 아이콘: 나의 활동 페이지로 이동 */}
-          <TouchableOpacity onPress={() => router.push("/user/activity")}>
-            <ClipboardList color="black" size={24} />
+          <TouchableOpacity>
+            <ClipboardList color="#333" size={22} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* 탭 영역 */}
       <View style={styles.topTabContainer}>
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab}
-            style={[
-              styles.tabButton,
-              activeTab === tab && styles.activeTabButton,
-            ]}
+            style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
             onPress={() => handleTabChange(tab)}
           >
-            <Text
-              style={[
-                styles.topTabItem,
-                activeTab === tab && styles.activeTabText,
-              ]}
-            >
-              {tab}
-            </Text>
+            <Text style={[styles.topTabItem, activeTab === tab && styles.activeTabText]}>{tab}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <FlatList
-        data={currentData}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListFooterComponent={renderPagination}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {activeTab === "북마크"
-                ? "북마크한 게시글이 없습니다."
-                : "게시물이 없습니다."}
-            </Text>
-          </View>
-        }
-      />
+      {/* 로딩 중일 때 표시 */}
+      {isLoading ? (
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#5AA9E6" />
+        </View>
+      ) : (
+        <FlatList
+          data={currentData}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.postId.toString()} // id 대신 postId 사용
+          contentContainerStyle={styles.listContent}
+          ListFooterComponent={renderPagination}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {activeTab === '북마크' ? '북마크한 게시글이 없습니다.' : '게시물이 없습니다.'}
+              </Text>
+            </View>
+          }
+        />
+      )}
 
-      {/* 글쓰기 FAB */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push("/write")}
+        onPress={() => navigation.navigate('PostWrite')}
       >
-        <SquarePen color="black" size={24} />
+        <SquarePen color="#ffffff" size={24} />
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
+// api연동
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: Platform.OS === "android" ? 45 : 0,
-  },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    height: 56,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#eeeeee',
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
-  headerLeft: { position: "absolute", left: 16 },
-  headerTitle: { fontSize: 18, fontWeight: "700" },
-  headerRight: {
-    flexDirection: "row",
-    position: "absolute",
-    right: 16,
-    alignItems: "center",
-  },
-  topTabContainer: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
+  backBtn: { padding: 4 },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#111111' },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
+  topTabContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#eeeeee' },
   tabButton: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    height: 48,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    flex: 1, alignItems: 'center', justifyContent: 'center', height: 48,
+    borderBottomWidth: 2, borderBottomColor: 'transparent',
   },
-  activeTabButton: { borderBottomColor: "#000" },
-  topTabItem: { fontSize: 15, color: "#999", fontWeight: "500" },
-  activeTabText: { color: "#000", fontWeight: "bold" },
-  listContent: { paddingHorizontal: 16, paddingBottom: 100 },
+  activeTabButton: { borderBottomColor: '#5AA9E6' },
+  topTabItem: { fontSize: 15, color: '#999', fontWeight: '500' },
+  activeTabText: { color: '#333', fontWeight: 'bold' },
+  listContent: { paddingHorizontal: 20, paddingBottom: 100, paddingTop: 15 },
   postItem: {
-    flexDirection: "row",
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f5f5f5",
-    alignItems: "center",
+    backgroundColor: '#ffffff',
+    padding: 20,
+    borderRadius: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 10 },
+      android: { elevation: 1 },
+    }),
   },
-  postInfoContainer: { flex: 1, paddingRight: 10 },
-  postTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
+  postHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  postAuthor: { fontSize: 13, color: "#666", marginBottom: 6 },
-  postStatsRow: { flexDirection: "row", alignItems: "center" },
-  postStatText: { fontSize: 11, color: "#aaa" },
+  postAuthor: { fontSize: 13, fontWeight: '700', color: '#111111' },
+  postDate: { fontSize: 12, color: '#BBBBBB' },
+  postTitle: { fontSize: 16, fontWeight: '800', color: '#333333', marginBottom: 16, lineHeight: 22 },
+  postFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  postStatsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statText: { fontSize: 12, color: '#888888', fontWeight: '500' },
   commentCountContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f9f9f9",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    minWidth: 45,
-    justifyContent: "center",
+    flexDirection: 'row', alignItems: 'center'
   },
-  commentCountText: {
-    fontSize: 13,
-    color: "#666",
-    marginLeft: 4,
-    fontWeight: "500",
-  },
+  commentCountText: { fontSize: 13, color: '#5AA9E6', marginLeft: 4, fontWeight: '700' },
   paginationContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 25,
-    marginBottom: 20,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+    marginTop: 25, marginBottom: 20,
   },
   pageBtn: {
-    width: 32,
-    height: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    marginHorizontal: 4,
-    borderRadius: 4,
+    width: 32, height: 32, justifyContent: 'center', alignItems: 'center',
+    marginHorizontal: 4, borderRadius: 16,
   },
-  activePageBtn: { backgroundColor: "#000" },
-  pageText: { fontSize: 15, color: "#666" },
-  activePageText: { color: "#fff", fontWeight: "bold" },
+  activePageBtn: { backgroundColor: '#5AA9E6' },
+  pageText: { fontSize: 15, color: '#888888' },
+  activePageText: { color: '#ffffff', fontWeight: 'bold' },
   arrowBtn: { padding: 5, marginHorizontal: 5 },
-  emptyContainer: { alignItems: "center", marginTop: 50 },
-  emptyText: { color: "#999", fontSize: 15 },
+  emptyContainer: { alignItems: 'center', marginTop: 50 },
+  emptyText: { color: '#999', fontSize: 15 },
   fab: {
-    position: "absolute",
-    right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#FFD700",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    position: 'absolute', right: 20, bottom: 20, width: 56, height: 56,
+    borderRadius: 28, backgroundColor: '#5AA9E6', alignItems: 'center', justifyContent: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#5AA9E6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 },
+      android: { elevation: 6 },
+    }),
   },
 });
