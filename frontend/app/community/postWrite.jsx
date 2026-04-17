@@ -14,6 +14,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// ✅ 1. 직접 client 대신 communityApi에서 함수 임포트
+import { createPost } from '../api/communityApi'; 
 
 export default function WriteScreen() {
   const navigation = useNavigation();
@@ -27,20 +29,26 @@ export default function WriteScreen() {
     }
 
     try {
-      const API_URL = 'http://여기에_백엔드_IP주소_입력/api/posts/create';
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content }),
+      // ✅ 2. API 함수 호출 방식으로 변경
+      const result = await createPost({
+        title: title,
+        content: content,
+        author: 'TestUser', // TODO: 나중에 실제 로그인한 유저명으로 교체
       });
 
-      if (response.ok) {
-        Alert.alert('성공', '게시글이 작성되었습니다!');
-        navigation.reset({ index: 0, routes: [{ name: 'Community' }] });
+      // ✅ 3. 팀 규칙: result.code === "SUCCESS" 확인
+      if (result && result.code === "SUCCESS") {
+        Alert.alert('성공', '게시글이 작성되었습니다!', [
+          { 
+            text: '확인', 
+            onPress: () => navigation.goBack() // 뒤로 가면서 Community 화면의 useFocusEffect 실행됨
+          }
+        ]);
       } else {
-        Alert.alert('실패', '게시글 작성에 실패했습니다.');
+        Alert.alert('실패', result.message || '게시글 작성에 실패했습니다.');
       }
     } catch (error) {
+      console.error('글쓰기 에러:', error);
       Alert.alert('에러', '서버와 연결할 수 없습니다.');
     }
   };
@@ -49,14 +57,9 @@ export default function WriteScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
+      {/* Header (기존과 동일) */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => {
-            if (navigation.canGoBack()) navigation.goBack();
-            else navigation.navigate('Community');
-          }}
-          style={styles.backBtn}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ChevronLeft color="#333" size={28} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>글 작성</Text>
@@ -96,6 +99,9 @@ export default function WriteScreen() {
     </SafeAreaView>
   );
 }
+
+
+
 
 const styles = StyleSheet.create({
   container: {

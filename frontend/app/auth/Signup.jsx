@@ -14,6 +14,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// ✅ 변경: client 대신 authApi에서 signup 함수 임포트
+import { signup } from '../api/authApi'; 
 
 const InputField = ({ label, icon: Icon, required, helper, ...props }) => {
   return (
@@ -68,20 +70,43 @@ const Signup = () => {
 
   const handleChange = (name, value) => setFormData({ ...formData, [name]: value });
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!formData.loginId || !formData.nickname || !formData.email || !formData.loginPw) {
       Alert.alert('알림', '필수 항목(*)을 모두 입력해주세요.');
       return;
     }
-    Alert.alert(
-      '가입 완료',
-      `${formData.nickname}님, 가입을 환영합니다!`,
-      [{ text: '확인', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }) }],
-    );
+
+    try {
+      // ✅ 변경: 키(Key) 이름을 API 명세서와 100% 일치시킵니다.
+      const result = await signup({
+        loginId: formData.loginId, // userId -> loginId 로 변경
+        loginPw: formData.loginPw, // password -> loginPw 로 변경
+        nickname: formData.nickname,
+        email: formData.email,
+        // phone: formData.phone, // 명세서에 없더라도 백엔드에서 받으면 유지, 안 받으면 제외
+        gender: formData.gender,
+      });
+
+      // ✅ 변경: 명세서의 성공 응답 형식 확인
+      // 만약 백엔드에서 성공 시 code: "SUCCESS" 가 아니라 
+      // 그냥 "요청 성공" 메시지만 준다면 조건을 result.message === "요청 성공" 등으로 바꿔야 할 수도 있습니다.
+      if (result.message === "요청 성공" || result.code === "SUCCESS") { 
+        Alert.alert(
+          '가입 완료',
+          `${formData.nickname}님, 가입을 환영합니다!`,
+          [{ text: '확인', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }) }]
+        );
+      } else {
+        Alert.alert('가입 실패', result.message || '정보를 다시 확인해주세요.');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('에러', '회원가입 중 문제가 발생했습니다.');
+    }
   };
 
   const isFormValid =
-    formData.loginId && formData.nickname && formData.email && formData.loginPw && formData.phone && formData.gender;
+    formData.loginId && formData.nickname && formData.email && formData.loginPw && formData.gender;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -179,14 +204,14 @@ const Signup = () => {
               <Text style={styles.sectionTitle}>추가 정보</Text>
             </View>
 
-            <InputField
+            {/* <InputField
               label="전화번호"
               icon={Phone}
               placeholder="010-0000-0000"
               keyboardType="phone-pad"
               value={formData.phone}
               onChangeText={(t) => handleChange('phone', t)}
-            />
+            /> */}
 
             {/* 성별 선택 */}
             <View style={fieldStyles.wrap}>

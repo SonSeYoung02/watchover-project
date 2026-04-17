@@ -14,19 +14,43 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { login } from '../api/authApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Login = () => {
   const navigation = useNavigation();
   const [loginId, setLoginId] = useState('');
   const [loginPw, setLoginPw] = useState('');
 
-  const handleLogin = () => {
-    if (loginId && loginPw) {
-      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-    } else {
-      Alert.alert('알림', '아이디와 비밀번호를 입력해주세요.');
+  const handleLogin = async () => {
+  if (loginId && loginPw) {
+    try {
+      const result = await login({ loginId, loginPw });
+
+      console.log("📡 서버 응답 전체 데이터:", JSON.stringify(result, null, 2));
+
+      if (result.code === "SUCCESS" || result.message === "요청 성공") {
+        
+        // ✅ [추가] 서버가 보내준 토큰을 저장합니다.
+        // 백엔드 명세서에 따라 result.data.accessToken 인지 확인이 필요합니다.
+        if (result.data && result.data.token) {
+          await AsyncStorage.setItem('userToken', result.data.token);
+          console.log("🔑 토큰 저장 완료:", result.data.token);
+        }
+
+        Alert.alert('성공', '로그인 되었습니다.');
+        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      } else {
+        Alert.alert('로그인 실패', result.message || '아이디나 비밀번호를 확인해주세요.');
+      }
+    } catch (error) {
+       console.error(error);
+       Alert.alert('에러', '서버 연결에 실패했습니다.');
     }
-  };
+  } else {
+     Alert.alert('알림', '아이디와 비밀번호를 입력해주세요.');
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,7 +62,7 @@ const Login = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.loginLogo}>Cares.</Text>
+          <Text style={styles.loginLogo}>Cares TEST</Text>
 
           <View style={styles.loginForm}>
             <View style={styles.inputGroup}>

@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft } from 'lucide-react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Platform,
   ScrollView,
@@ -9,19 +9,44 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+// ✅ 변경: client 대신 bannerApi에서 전체 목록 함수 임포트
+import { getBannerList } from '../api/bannerApi'; 
 
 const QuoteList = () => {
   const navigation = useNavigation();
+  const [quotes, setQuotes] = useState([]); 
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [quotes] = useState([
-    { id: 1, text: '자기 사상의 밑바탕을 바꿀 수 없는 사람은\n결코 현실을 바꾸지 못한다.', author: '안와르 엘 사다트', bgColor: '#A3D2F3' },
-    { id: 2, text: '어제와 똑같이 살면서\n다른 미래를 기대하는 것은 정신병 초기 증세다.', author: '알베르트 아인슈타인', bgColor: '#5AA9E6' },
-    { id: 3, text: '당신이 할 수 있다고 믿든 할 수 없다고 믿든,\n당신의 믿음이 옳다.', author: '헨리 포드', bgColor: '#7FBBEA' },
-    { id: 4, text: '성공은 최종적인 것이 아니며,\n실패는 치명적인 것이 아니다.', author: '윈스턴 처칠', bgColor: '#A3D2F3' },
-    { id: 5, text: '가장 큰 위험은 위험을 감수하지 않는 것이다.', author: '마크 저커버그', bgColor: '#7FBBEA' },
-  ]);
+  useEffect(() => {
+    const fetchAllQuotes = async () => {
+      try {
+        setIsLoading(true);
+        // ✅ 변경: 직접 호출 대신 미리 만들어둔 전체 목록 API 함수 사용
+        const result = await getBannerList(); 
+        
+        if (result && result.code === "SUCCESS" && result.data) {
+          // 서버에서 받은 배열 데이터를 UI에 맞게 변환
+          const formattedData = result.data.map((item, index) => ({
+            id: item.id || index,
+            text: item.message || '내용이 없습니다.',
+            author: item.author || 'Care AI',
+            // 카드마다 색상을 다르게 주기 위한 로직
+            bgColor: index % 3 === 0 ? '#5AA9E6' : index % 3 === 1 ? '#7BBCEB' : '#A3D1F1'
+          }));
+          setQuotes(formattedData);
+        }
+      } catch (error) {
+        console.error('명언 목록 로드 실패:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAllQuotes();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -35,29 +60,43 @@ const QuoteList = () => {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView
-        style={styles.quoteScrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {quotes.map((quote) => (
-          <View
-            key={quote.id}
-            style={[styles.quoteListCard, { backgroundColor: quote.bgColor }]}
-          >
-            <View style={styles.quoteTagContainer}>
-              <Text style={styles.quoteTagText}>명언</Text>
-            </View>
-            <Text style={styles.quoteText}>{quote.text}</Text>
-            <Text style={styles.quoteAuthor}>- {quote.author} -</Text>
-          </View>
-        ))}
-      </ScrollView>
+      {isLoading ? (
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#5AA9E6" />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.quoteScrollArea}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {quotes.length > 0 ? (
+            quotes.map((quote) => (
+              <View
+                key={quote.id}
+                style={[styles.quoteListCard, { backgroundColor: quote.bgColor }]}
+              >
+                <View style={styles.quoteTagContainer}>
+                  <Text style={styles.quoteTagText}>명언</Text>
+                </View>
+                <Text style={styles.quoteText}>{quote.text}</Text>
+                <Text style={styles.quoteAuthor}>- {quote.author} -</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={{ textAlign: 'center', marginTop: 50, color: '#999' }}>
+              등록된 명언이 없습니다.
+            </Text>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
 
 export default QuoteList;
+
+// ... styles는 기존과 동일 ...
 
 const styles = StyleSheet.create({
   container: {
