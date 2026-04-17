@@ -25,7 +25,7 @@ export default function CharacterCreate() {
     if (userPhoto) {
       handleCharacterGeneration();
     } else {
-      Alert.alert("오류", "전달된 사진이 없습니다.");
+      Alert.alert("오류", "업로드된 사진이 없습니다.");
       navigation.goBack();
     }
   }, [userPhoto]);
@@ -94,7 +94,6 @@ export default function CharacterCreate() {
   );
 }
 
-// ✅ 스타일은 준혁 님이 짜놓은 그대로 유지합니다.
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#1C1C1E" },
   overlay: {
