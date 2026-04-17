@@ -1,6 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
 import { BotMessageSquare, ChevronRight, Quote, Users } from 'lucide-react-native';
-import { useState } from 'react';
 import {
   Dimensions,
   Platform,
@@ -13,8 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Swiper from 'react-native-swiper';
+import { getBannerList } from '../api/bannerApi';
 
 import Navigation from '../../components/Navigation';
+import { useEffect, useState, useCallback } from 'react'; // useEffect 추가
 
 const { width } = Dimensions.get('window');
 
@@ -41,28 +42,38 @@ const SectionHeader = ({ title }) => (
 
 const MainHome = () => {
   const navigation = useNavigation();
-  const userName = 'TestUser'; // TODO: 실제 유저 데이터 연동
+  const userName = 'TestUser'; 
 
-  const [quotes] = useState([
-    {
-      id: 1,
-      text: '자기 사상의 밑바탕을 바꿀 수 없는 사람은\n결코 현실을 바꾸지 못한다.',
-      author: '안와르 엘 사다트',
-      accent: '#5AA9E6',
-    },
-    {
-      id: 2,
-      text: '어제와 똑같이 살면서\n다른 미래를 기대하는 것은 정신병 초기 증세다.',
-      author: '알베르트 아인슈타인',
-      accent: '#7B9FE0',
-    },
-    {
-      id: 3,
-      text: '당신이 할 수 있다고 믿든 할 수 없다고 믿든,\n당신의 믿음이 옳다.',
-      author: '헨리 포드',
-      accent: '#6EC6C6',
-    },
-  ]);
+  // 1. 가짜 데이터 대신 빈 배열로 시작
+  const [quotes, setQuotes] = useState([]);
+
+  // 2. 서버에서 명언 가져오는 함수 (명세서: GET /api/banners/{banner_id})
+  // 명세서에 배너 리스트 조회가 있다면 그걸 쓰고, 없다면 개별 호출을 반복하거나 
+  // "배너 전체 리스트 API"가 필요 
+  // 일단 하나만 가져오는 구조로 만듬
+  useEffect(() => {
+    const fetchQuotes = async () => {
+      try {
+        const result = await getBannerList(); // API 호출
+        
+        if (result && result.code === "SUCCESS" && result.data) {
+          // 서버에서 받은 데이터 배열을 Swiper에 필요한 형식으로 매핑
+          const formattedQuotes = result.data.map((item, index) => ({
+            id: item.id || index, // 서버에서 id를 주면 쓰고 아니면 index 사용
+            text: item.message || '소중한 하루 보내세요.',
+            author: item.author || 'Care AI',
+            // 디자인 포인트: 배경색을 두 가지 정도로 번갈아가며 적용
+            accent: index % 2 === 0 ? '#5AA9E6' : '#7BBCEB', 
+          }));
+          
+          setQuotes(formattedQuotes);
+        }
+      } catch (error) {
+        console.error('명언 목록 로드 실패:', error);
+      }
+    };
+    fetchQuotes();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -97,33 +108,40 @@ const MainHome = () => {
         <View style={styles.section}>
           <SectionHeader title="오늘의 명언" />
           <View style={styles.swiperContainer}>
-            <Swiper
-              style={styles.swiper}
-              autoplay
-              autoplayTimeout={5}
-              dotStyle={styles.dot}
-              activeDotStyle={styles.activeDot}
-              paginationStyle={{ bottom: 14 }}
-              loop
-            >
-              {quotes.map((quote) => (
-                <View key={quote.id} style={[styles.slide, { backgroundColor: quote.accent }]}>
-                  <View style={styles.quoteIconWrap}>
-                    <Quote size={20} color="rgba(255,255,255,0.6)" />
+            {/* ✅ quotes 데이터가 있을 때만 Swiper 렌더링 */}
+            {quotes.length > 0 ? (
+              <Swiper
+                style={styles.swiper}
+                autoplay
+                autoplayTimeout={5}
+                dotStyle={styles.dot}
+                activeDotStyle={styles.activeDot}
+                paginationStyle={{ bottom: 14 }}
+                loop
+              >
+                {quotes.map((quote) => (
+                  <View key={quote.id} style={[styles.slide, { backgroundColor: quote.accent }]}>
+                    <View style={styles.quoteIconWrap}>
+                      <Quote size={20} color="rgba(255,255,255,0.6)" />
+                    </View>
+                    <Text style={styles.quoteText}>{quote.text}</Text>
+                    <Text style={styles.quoteAuthor}>— {quote.author}</Text>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('Quotes')}
+                      style={styles.viewAllBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.viewAllText}>명언 더보기</Text>
+                      <ChevronRight size={13} color="rgba(255,255,255,0.9)" />
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.quoteText}>{quote.text}</Text>
-                  <Text style={styles.quoteAuthor}>— {quote.author}</Text>
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('Quotes')}
-                    style={styles.viewAllBtn}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.viewAllText}>명언 더보기</Text>
-                    <ChevronRight size={13} color="rgba(255,255,255,0.9)" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </Swiper>
+                ))}
+              </Swiper>
+            ) : (
+              <View style={[styles.slide, { backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' }]}>
+                 <Text style={{ color: '#94A3B8' }}>명언을 불러오는 중입니다...</Text>
+              </View>
+            )}
           </View>
         </View>
 

@@ -1,5 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ChevronLeft, Lock } from 'lucide-react-native';
+import { useEffect, useState } from 'react'; // 추가
 import {
   Platform,
   ScrollView,
@@ -8,19 +9,43 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getChatDetail } from '../api/chatApi'; // 함수 임포트
 
 const ChatDetail = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { id } = route.params || {};
+  const { id } = route.params || {}; 
+  const [chatLogs, setChatLogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const userToken = "내_로그인_토큰"; // 실제 토큰으로 연결 필요
+
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        setIsLoading(true);
+        
+        // ✅ 2. API 함수 호출 방식으로 변경
+        const result = await getChatDetail(id, userToken);
+        
+        if (result && result.data) {
+          // 서버 데이터 구조에 맞춰 저장
+          setChatLogs(result.data.chatLogs || []);
+        }
+      } catch (error) {
+        console.error('상세 내역 로드 실패:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (id) fetchDetail();
+  }, [id]);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-
-      {/* Standard Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ChevronLeft color="#333" size={28} />
@@ -29,30 +54,28 @@ const ChatDetail = () => {
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
-        style={styles.chatMessages}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.historyDateBadge}>
-          <Text style={styles.dateText}>2025.11.20 대화 기록</Text>
-        </View>
+      {isLoading ? (
+        <ActivityIndicator style={{ flex: 1 }} color="#5AA9E6" />
+      ) : (
+        <ScrollView style={styles.chatMessages} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.historyDateBadge}>
+            <Text style={styles.dateText}>대화 기록 (ID: {id})</Text>
+          </View>
 
-        <View style={[styles.messageRow, styles.aiRow]}>
-          <View style={styles.aiAvatar}>
-            <Text style={styles.avatarText}>AI</Text>
-          </View>
-          <View style={[styles.bubble, styles.aiBubble]}>
-            <Text style={[styles.messageText, styles.aiText]}>당시 나눈 대화 내용입니다. (관련 기록 ID: {id})</Text>
-          </View>
-        </View>
-
-        <View style={[styles.messageRow, styles.userRow]}>
-          <View style={[styles.bubble, styles.userBubble]}>
-            <Text style={[styles.messageText, styles.userText]}>정말 고마웠어! 다음에 또 보자.</Text>
-          </View>
-        </View>
-      </ScrollView>
+          {chatLogs.map((log, index) => (
+            <View key={index} style={[styles.messageRow, log.type === 'ai' ? styles.aiRow : styles.userRow]}>
+              {log.type === 'ai' && (
+                <View style={styles.aiAvatar}><Text style={styles.avatarText}>AI</Text></View>
+              )}
+              <View style={[styles.bubble, log.type === 'ai' ? styles.aiBubble : styles.userBubble]}>
+                <Text style={[styles.messageText, log.type === 'ai' ? styles.aiText : styles.userText]}>
+                  {log.text || log.message}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      )}
 
       <View style={styles.detailFooterWrapper}>
         <View style={styles.detailFooterBubble}>

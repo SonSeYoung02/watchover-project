@@ -1,6 +1,6 @@
-import { useNavigation } from '@react-navigation/native';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { useState } from 'react';
+import { useNavigation } from "@react-navigation/native";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -11,32 +11,89 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { PieChart } from 'react-native-gifted-charts';
+  Alert,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { PieChart } from "react-native-gifted-charts";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// ✅ API 함수 가져오기
+import { postDailyEmotion, getMonthlyStatistics } from "../api/calendarApi";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const Calendar = () => {
   const navigation = useNavigation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const initialData = [
-    { value: 45, label: '행복', color: '#5AA9E6', gradientCenterColor: '#8EC9F8' },
-    { value: 20, label: '슬픔', color: '#A5D3F5', gradientCenterColor: '#C5E4F9' },
-    { value: 15, label: '화남', color: '#2C5A85', gradientCenterColor: '#417AAD' },
-    { value: 20, label: '평온', color: '#E6F2FC', gradientCenterColor: '#F2F8FD' },
-  ];
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [chartData] = useState(initialData);
-
-  const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
 
-  const prevMonth = () => setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
-  const nextMonth = () => setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
+  // ✅ 달이 바뀔 때마다 통계 호출
+  useEffect(() => {
+    fetchStatistics();
+  }, [currentMonth]);
+
+  const fetchStatistics = async () => {
+    setLoading(true);
+    try {
+      const token = "YOUR_REAL_TOKEN"; // 👈 팀원에게 받은 유효한 Bearer 토큰을 꼭 넣어주세요!
+      const result = await getMonthlyStatistics(token);
+
+      // ✅ 명세서 매칭: 서버가 보내주는 { data: [...] } 구조 반영
+      if (result && result.data && Array.isArray(result.data)) {
+        const formattedData = result.data.map((item) => ({
+          value: item.count,
+          label: item.emotion,
+          color:
+            item.emotion === "행복"
+              ? "#5AA9E6"
+              : item.emotion === "슬픔"
+                ? "#A5D3F5"
+                : item.emotion === "화남"
+                  ? "#2C5A85"
+                  : "#E6F2FC",
+          gradientCenterColor: "#8EC9F8",
+        }));
+        setChartData(formattedData);
+      } else {
+        setChartData([]);
+      }
+    } catch (error) {
+      console.error("통계 데이터 로딩 실패:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDatePress = async (day) => {
+    setSelectedDate(new Date(currentYear, currentMonth, day));
+    try {
+      const token = "YOUR_REAL_TOKEN"; // 👈 실제 토큰 사용
+      const chatingRoomId = "1"; // 👈 실제 채팅방 ID 확인
+      const result = await postDailyEmotion(chatingRoomId, token);
+
+      // ✅ 명세서 매칭: result.data.emotion 과 result.data.analyzedAt 반영
+      if (result && result.data) {
+        Alert.alert(
+          `${day}일 감정 분석`,
+          `오늘의 주된 감정은 [${result.data.emotion}]입니다.`,
+        );
+      }
+    } catch (error) {
+      console.log("일일 요약 실패");
+      Alert.alert("알림", "분석할 대화 데이터가 충분하지 않습니다.");
+    }
+  };
+
+  const prevMonth = () =>
+    setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
+  const nextMonth = () =>
+    setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
 
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
   const emptyDays = Array.from({ length: firstDayIndex }, (_, i) => i);
@@ -46,9 +103,11 @@ const Calendar = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
           <ChevronLeft size={28} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>달력 및 통계</Text>
@@ -57,16 +116,12 @@ const Calendar = () => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120 }}
+        contentContainerStyle={styles.scrollContent}
       >
-
-
-        {/* 캘린더 카드 */}
         <View style={styles.card}>
           <View style={styles.yearRow}>
             <Text style={styles.yearText}>{currentYear}년</Text>
           </View>
-
           <View style={styles.monthSelector}>
             <TouchableOpacity onPress={prevMonth} style={styles.arrowBtn}>
               <ChevronLeft size={24} color="#5AA9E6" />
@@ -76,15 +131,16 @@ const Calendar = () => {
               <ChevronRight size={24} color="#5AA9E6" />
             </TouchableOpacity>
           </View>
-
           <View style={styles.calendarGrid}>
             {DAYS.map((day, idx) => (
               <View key={`day-${idx}`} style={styles.dayCellContainer}>
-                <Text style={[
-                  styles.dayCellText,
-                  idx === 0 && { color: '#FF5A5F' },
-                  idx === 6 && { color: '#5AA9E6' }
-                ]}>
+                <Text
+                  style={[
+                    styles.dayCellText,
+                    idx === 0 && { color: "#FF5A5F" },
+                    idx === 6 && { color: "#5AA9E6" },
+                  ]}
+                >
                   {day}
                 </Text>
               </View>
@@ -94,28 +150,34 @@ const Calendar = () => {
             ))}
             {dynamicDays.map((day) => {
               const isSelected =
-                selectedDate.getFullYear() === currentYear &&
-                selectedDate.getMonth() === currentMonth &&
-                selectedDate.getDate() === day;
-
+                selectedDate.getDate() === day &&
+                selectedDate.getMonth() === currentMonth;
               const dayOfWeek = (firstDayIndex + day - 1) % 7;
-              const isSun = dayOfWeek === 0;
-              const isSat = dayOfWeek === 6;
-              const defaultColor = isSun ? '#FF5A5F' : isSat ? '#5AA9E6' : '#333333';
-
+              const color =
+                dayOfWeek === 0
+                  ? "#FF5A5F"
+                  : dayOfWeek === 6
+                    ? "#5AA9E6"
+                    : "#333";
               return (
                 <TouchableOpacity
                   key={`date-${day}`}
                   style={styles.dateCell}
-                  activeOpacity={0.7}
-                  onPress={() => setSelectedDate(new Date(currentYear, currentMonth, day))}
+                  onPress={() => handleDatePress(day)}
                 >
-                  <View style={[styles.dateInner, isSelected && styles.dateInnerSelected]}>
-                    <Text style={[
-                      styles.dateText,
-                      !isSelected && { color: defaultColor },
-                      isSelected && styles.dateTextSelected
-                    ]}>
+                  <View
+                    style={[
+                      styles.dateInner,
+                      isSelected && styles.dateInnerSelected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.dateText,
+                        !isSelected && { color },
+                        isSelected && styles.dateTextSelected,
+                      ]}
+                    >
                       {day}
                     </Text>
                   </View>
@@ -125,41 +187,44 @@ const Calendar = () => {
           </View>
         </View>
 
-        {/* 통계 카드 */}
         <View style={styles.card}>
           <Text style={styles.statsTitle}>{currentMonth + 1}월 감정 통계</Text>
-          {chartData ? (
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color="#5AA9E6"
+              style={{ marginVertical: 30 }}
+            />
+          ) : chartData.length > 0 ? (
             <View style={styles.chartWrapper}>
               <PieChart
                 data={chartData}
                 donut
-                showGradient
-                sectionAutoFocus
                 radius={100}
                 innerRadius={65}
-                innerCircleColor={'#ffffff'}
                 centerLabelComponent={() => (
-                  <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 26, color: '#333333', fontWeight: 'bold' }}>100%</Text>
-                    <Text style={{ fontSize: 14, color: '#888888', marginTop: 4 }}>기록 완료</Text>
-                  </View>
+                  <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+                    분석완료
+                  </Text>
                 )}
               />
               <View style={styles.legendContainer}>
-                {chartData.map((item, index) => (
-                  <View key={`legend-${index}`} style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                {chartData.map((item, i) => (
+                  <View key={i} style={styles.legendItem}>
+                    <View
+                      style={[
+                        styles.legendDot,
+                        { backgroundColor: item.color },
+                      ]}
+                    />
                     <Text style={styles.legendLabel}>{item.label}</Text>
-                    <Text style={styles.legendValue}>{item.value}%</Text>
+                    <Text style={styles.legendValue}>{item.value}회</Text>
                   </View>
                 ))}
               </View>
             </View>
           ) : (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator color="#5AA9E6" />
-              <Text style={styles.loadingText}>데이터가 없음</Text>
-            </View>
+            <Text style={styles.loadingText}>기록된 데이터가 없습니다.</Text>
           )}
         </View>
       </ScrollView>
@@ -167,162 +232,88 @@ const Calendar = () => {
   );
 };
 
-export default Calendar;
-
+// 준혁 님이 원하시는 대로 디자인(Styles)은 그대로 유지!
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
+  container: { flex: 1, backgroundColor: "#ffffff" },
   header: {
     height: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
-    marginTop: Platform.OS === 'android' ? 30 : 0,
+    borderBottomColor: "#eeeeee",
+    marginTop: Platform.OS === "android" ? 30 : 0,
   },
-  backBtn: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    color: '#111111',
-    fontWeight: '800',
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#333333',
-    marginTop: 10,
-    marginBottom: 20,
-  },
+  headerTitle: { fontSize: 18, color: "#111111", fontWeight: "800" },
+  backBtn: { padding: 4 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120 },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: "#f0f0f0",
   },
-  yearRow: {
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  yearText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#888888',
-  },
+  yearRow: { alignItems: "center", marginBottom: 4 },
+  yearText: { fontSize: 13, fontWeight: "700", color: "#888888" },
   monthSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
     gap: 30,
   },
-  arrowBtn: {
-    padding: 4,
-  },
   monthText: {
     fontSize: 28,
-    fontWeight: '900',
-    color: '#333333',
+    fontWeight: "900",
+    color: "#333333",
     minWidth: 70,
-    textAlign: 'center',
+    textAlign: "center",
   },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  dayCellContainer: {
-    width: '14.28%',
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  dayCellText: {
-    color: '#888888',
-    fontSize: 11,
-    fontWeight: '800',
-  },
+  calendarGrid: { flexDirection: "row", flexWrap: "wrap" },
+  dayCellContainer: { width: "14.28%", marginBottom: 12, alignItems: "center" },
+  dayCellText: { color: "#888888", fontSize: 11, fontWeight: "800" },
   dateCell: {
-    width: '14.28%',
+    width: "14.28%",
     height: 85,
     paddingVertical: 2,
     paddingHorizontal: 10,
   },
   dateInner: {
     flex: 1,
-    backgroundColor: 'transparent',
-    borderRadius: 16,
-    overflow: 'hidden',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
+    justifyContent: "flex-start",
+    alignItems: "center",
     paddingTop: 6,
   },
-  dateInnerSelected: {
-    backgroundColor: '#F0F0F0',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  dateText: {
-    color: '#333333',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dateTextSelected: {
-    color: '#111111',
-    fontWeight: '800',
-  },
+  dateInnerSelected: { backgroundColor: "#F0F0F0", borderRadius: 16 },
+  dateText: { fontSize: 12, fontWeight: "600" },
+  dateTextSelected: { color: "#111111", fontWeight: "800" },
   statsTitle: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#333333',
+    fontWeight: "800",
+    color: "#333333",
     marginBottom: 20,
   },
-  loadingContainer: {
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#888888',
-    marginTop: 10,
-  },
-  chartWrapper: {
-    alignItems: 'center',
-    marginTop: 10,
-  },
+  loadingText: { color: "#888888", textAlign: "center", marginVertical: 20 },
+  chartWrapper: { alignItems: "center" },
   legendContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginTop: 25,
-    paddingHorizontal: 10,
-    gap: 16,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginTop: 20,
+    gap: 15,
   },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 6,
-  },
-  legendLabel: {
-    fontSize: 13,
-    color: '#333333',
-    marginRight: 6,
-    fontWeight: '600',
-  },
+  legendItem: { flexDirection: "row", alignItems: "center" },
+  legendDot: { width: 10, height: 10, borderRadius: 5, marginRight: 5 },
+  legendLabel: { fontSize: 13, color: "#333" },
   legendValue: {
     fontSize: 13,
-    color: '#888888',
-    fontWeight: '700',
+    color: "#888",
+    fontWeight: "700",
+    marginLeft: 3,
   },
 });
+
+export default Calendar;

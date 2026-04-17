@@ -1,5 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft, MessageCircle } from 'lucide-react-native';
+import { useEffect, useState } from 'react'; // 추가
 import {
   Platform,
   ScrollView,
@@ -8,23 +9,40 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator, // 추가
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getChatList } from '../api/chatApi';
 
 const ChatHistory = () => {
   const navigation = useNavigation();
+  const [historyData, setHistoryData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const userToken = "내_로그인_토큰"; // 실제 토큰으로 연결 필요
 
-  const historyData = [
-    { id: 101, date: '2025.11.20', summary: '취업 고민에 대한 대화' },
-    { id: 102, date: '2025.11.18', summary: '인간관계 스트레스 상담' },
-    { id: 103, date: '2025.11.15', summary: '오늘 하루 기분 기록' },
-  ];
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        setIsLoading(true);
+        
+        // ✅ 2. API 함수 호출 방식으로 변경
+        const result = await getChatList(userToken); 
+        
+        if (result && result.data) {
+          setHistoryData(result.data);
+        }
+      } catch (error) {
+        console.error('상담 기록 로드 실패:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-
-      {/* Standard Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ChevronLeft color="#333" size={28} />
@@ -33,29 +51,26 @@ const ChatHistory = () => {
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
-        style={{ backgroundColor: '#F8FAFC' }}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {historyData.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.historyCard}
-            onPress={() => navigation.navigate('ChatDetail', { id: item.id })}
-            activeOpacity={0.7}
-          >
-            <View style={styles.cardIcon}>
-              <MessageCircle size={22} color="#5AA9E6" />
-            </View>
-            <View style={styles.cardInfo}>
-              <Text style={styles.cardDate}>{item.date}</Text>
-              <Text style={styles.cardSummary} numberOfLines={1}>{item.summary}</Text>
-            </View>
-            <ChevronLeft size={18} color="#CBD5E1" style={{ transform: [{ rotate: '180deg' }] }} />
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {isLoading ? (
+        <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator color="#5AA9E6" /></View>
+      ) : (
+        <ScrollView style={{ backgroundColor: '#F8FAFC' }} contentContainerStyle={styles.listContainer}>
+          {historyData.map((item) => (
+            <TouchableOpacity
+              key={item.chatRoomId || item.id}
+              style={styles.historyCard}
+              onPress={() => navigation.navigate('ChatDetail', { id: item.chatRoomId || item.id })}
+            >
+              <View style={styles.cardIcon}><MessageCircle size={22} color="#5AA9E6" /></View>
+              <View style={styles.cardInfo}>
+                <Text style={styles.cardDate}>{item.date || item.createdAt}</Text>
+                <Text style={styles.cardSummary} numberOfLines={1}>{item.summary || '상담 기록 상세 보기'}</Text>
+              </View>
+              <ChevronLeft size={18} color="#CBD5E1" style={{ transform: [{ rotate: '180deg' }] }} />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };

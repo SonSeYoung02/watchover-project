@@ -9,8 +9,23 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// 1. 공통으로 사용하는 토글 스위치 부품 (Settings 밖으로 뺌)
+const ToggleSwitch = ({ isOn, onToggle }) => (
+  <TouchableOpacity
+    style={[styles.toggleSwitch, isOn ? styles.toggleOn : styles.toggleOff]}
+    onPress={onToggle}
+    activeOpacity={0.8}
+  >
+    <View style={[styles.toggleHandle, isOn ? styles.handleOn : styles.handleOff]} />
+    <Text style={[styles.toggleLabel, isOn ? styles.labelOn : styles.labelOff]}>
+      {isOn ? 'ON' : 'OFF'}
+    </Text>
+  </TouchableOpacity>
+);
 
 const Settings = () => {
   const navigation = useNavigation();
@@ -27,18 +42,25 @@ const Settings = () => {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const ToggleSwitch = ({ isOn, onToggle }) => (
-    <TouchableOpacity
-      style={[styles.toggleSwitch, isOn ? styles.toggleOn : styles.toggleOff]}
-      onPress={onToggle}
-      activeOpacity={0.8}
-    >
-      <View style={[styles.toggleHandle, isOn ? styles.handleOn : styles.handleOff]} />
-      <Text style={[styles.toggleLabel, isOn ? styles.labelOn : styles.labelOff]}>
-        {isOn ? 'ON' : 'OFF'}
-      </Text>
-    </TouchableOpacity>
-  );
+  const handleLogout = () => {
+    Alert.alert(
+      '로그아웃',
+      '정말 로그아웃 하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        { 
+          text: '확인', 
+          onPress: () => {
+            // ✅ 로그아웃 시 스택을 완전히 비우고 로그인 화면으로 이동 (잘 하셨습니다!)
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          } 
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -108,9 +130,11 @@ const Settings = () => {
             <Text style={styles.menuItemText}>캐시 데이터 삭제</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>서비스 이용리용 약관</Text>
+            <Text style={styles.menuItemText}>서비스 이용 약관</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          
+          {/* 로그아웃 버튼에 handleLogout 함수 연결 */}
+          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
             <Text style={[styles.menuItemText, { color: '#FF5A5F' }]}>로그아웃</Text>
           </TouchableOpacity>
         </View>
@@ -130,17 +154,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#111111' },
   backBtn: { padding: 4 },
-  
   settingsContent: { flex: 1 },
   settingsSection: { paddingVertical: 32, paddingHorizontal: 24 },
   sectionTitle: { fontSize: 14, fontWeight: '800', color: '#999999', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 1 },
-  
   settingItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 },
   simpleItem: { marginBottom: 28 },
   settingText: { flex: 1, marginRight: 20 },
   itemLabel: { fontSize: 16, fontWeight: '700', color: '#333333' },
   itemSub: { fontSize: 13, color: '#999999', marginTop: 6, lineHeight: 18 },
-  
   toggleSwitch: { width: 56, height: 28, borderRadius: 14, paddingHorizontal: 4, justifyContent: 'center' },
   toggleOn: { backgroundColor: '#5AA9E6' },
   toggleOff: { backgroundColor: '#E5E5EA' },
@@ -150,9 +171,7 @@ const styles = StyleSheet.create({
   toggleLabel: { fontSize: 9, fontWeight: '900', color: '#ffffff', position: 'absolute' },
   labelOn: { left: 8 },
   labelOff: { right: 8, color: '#aaaaaa' },
-  
   sectionDivider: { height: 1, backgroundColor: '#f5f5f5', marginHorizontal: 24 },
-  
   menuItem: { marginBottom: 28 },
   menuItemText: { fontSize: 16, fontWeight: '600', color: '#333333' },
 });

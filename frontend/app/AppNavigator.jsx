@@ -1,7 +1,5 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import axios from 'axios';
-import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import Login from './auth/Login';
@@ -19,9 +17,8 @@ import Community from './community/index';
 import PostDetail from './community/post/PostDetail';
 import PostWrite from './community/postWrite';
 import Mypage from './mypage/Mypage';
+import Settings from './mypage/Settings';
 
-axios.defaults.baseURL =
-  Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080';
 
 const Stack = createNativeStackNavigator();
 
@@ -51,6 +48,7 @@ export default function AppNavigator() {
           <Stack.Screen name="PostDetail" component={PostDetail} />
           <Stack.Screen name="PostWrite" component={PostWrite} />
           <Stack.Screen name="Mypage" component={Mypage} />
+          <Stack.Screen name="Settings" component={Settings} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
