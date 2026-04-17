@@ -232,7 +232,6 @@ const Calendar = () => {
   );
 };
 
-// 준혁 님이 원하시는 대로 디자인(Styles)은 그대로 유지!
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
   header: {

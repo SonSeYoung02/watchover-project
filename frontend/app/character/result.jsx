@@ -68,7 +68,6 @@ export default function CharacterResult() {
   );
 }
 
-// ✅ 스타일은 준혁 님이 짜놓은 깔끔한 디자인 그대로 유지합니다.
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   header: {
