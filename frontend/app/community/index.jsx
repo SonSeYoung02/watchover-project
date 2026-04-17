@@ -167,7 +167,7 @@ export default function CommunityScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* ✅ Header 중앙 정렬 수정 */}
+      {/* ✅ Header: 중앙 정렬 및 2단계 버튼 기능 연결 수정 */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -176,14 +176,19 @@ export default function CommunityScreen() {
           <ChevronLeft color="#333" size={28} />
         </TouchableOpacity>
 
-        {/* ⭐ flex: 1과 textAlign: center로 중앙 배치 */}
+        {/* ⭐ 타이틀 중앙 배치 */}
         <Text style={styles.headerTitle}>커뮤니티</Text>
 
         <View style={styles.headerRight}>
-          <TouchableOpacity>
+          {/* ✅ 돋보기: AppNavigator에 등록한 이름 "SearchInput"으로 이동 */}
+          <TouchableOpacity onPress={() => navigation.navigate("SearchInput")}>
             <Search color="#333" size={22} style={{ marginRight: 12 }} />
           </TouchableOpacity>
-          <TouchableOpacity>
+
+          {/* ✅ 게시판 모양: AppNavigator에 등록한 이름 "PostsComments"로 이동 */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate("PostsComments")}
+          >
             <ClipboardList color="#333" size={22} />
           </TouchableOpacity>
         </View>
@@ -246,8 +251,6 @@ export default function CommunityScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
-
-  // ✅ 헤더 스타일 대칭 수정
   header: {
     height: 60,
     flexDirection: "row",
@@ -258,15 +261,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     marginTop: Platform.OS === "android" ? 30 : 0,
   },
-
-  // ⭐ 왼쪽 영역 너비 고정
   backBtn: {
     width: 80,
     alignItems: "flex-start",
     padding: 4,
   },
-
-  // ⭐ 제목 중앙 정렬
   headerTitle: {
     flex: 1,
     fontSize: 18,
@@ -274,15 +273,12 @@ const styles = StyleSheet.create({
     color: "#111111",
     textAlign: "center",
   },
-
-  // ⭐ 오른쪽 영역 너비 고정 (왼쪽과 대칭)
   headerRight: {
     width: 80,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
   },
-
   topTabContainer: {
     flexDirection: "row",
     borderBottomWidth: 1,
