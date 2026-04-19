@@ -1,10 +1,9 @@
+import { Platform } from "react-native";
 import client from "./client";
 
-export const generateCharacter = async (imageUri, userId, token) => {
+export const generateCharacter = async (imageUri, token) => {
   const formData = new FormData();
 
-  // 1. 이미지 파일 정보 설정
-  // react-native-image-picker에서 받은 uri를 파일 객체로 변환
   const filename = imageUri.split("/").pop();
   const match = /\.(\w+)$/.exec(filename);
   const type = match ? `image/${match[1]}` : `image`;
@@ -15,17 +14,17 @@ export const generateCharacter = async (imageUri, userId, token) => {
     type: type,
   });
 
-  // 2. userId 추가 (팀원분 요청대로 일단 포함!)
-  formData.append("userId", userId);
+  // ✅ [테스트용 강제 주입] 서버가 userId가 없다고 화내니까 일단 "1"을 넣어서 보냅니다.
+  formData.append("userId", "1");
 
   try {
-    const response = await client.post("/api/chracters/generate", formData, {
+    const response = await client.post("/api/characters/generate", formData, {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data", // 이미지 전송 필수 헤더
+        "Content-Type": "multipart/form-data",
       },
     });
-    return response.data; // { data: { characterUrl: "..." } } 반환
+    return response.data;
   } catch (error) {
     console.error("캐릭터 생성 API 에러:", error);
     throw error;

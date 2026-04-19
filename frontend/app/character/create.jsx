@@ -9,58 +9,74 @@ import {
   TouchableOpacity,
   View,
   Alert,
-  Platform, // Platform 추가
 } from "react-native";
-
-// ✅ 1. API 함수 가져오기
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { generateCharacter } from "../api/characterApi";
 
 export default function CharacterCreate() {
   const navigation = useNavigation();
   const route = useRoute();
+
+  // ✅ 다시 실제 사용자가 선택한 사진을 가져옵니다.
   const { userPhoto } = route.params || {};
 
-  // ✅ 2. 화면이 로딩되자마자 서버에 캐릭터 생성을 요청합니다.
   useEffect(() => {
+    // ✅ 사진이 있을 때만 생성을 시작하도록 다시 복구합니다.
     if (userPhoto) {
       handleCharacterGeneration();
     } else {
-      Alert.alert("오류", "업로드된 사진이 없습니다.");
+      Alert.alert("오류", "분석할 사진이 없습니다.");
       navigation.goBack();
     }
   }, [userPhoto]);
 
   const handleCharacterGeneration = async () => {
     try {
-      // TODO: 실제 프로젝트의 로그인 토큰과 유저 ID를 사용해야 합니다.
-      const token = "YOUR_STORED_TOKEN";
-      const userId = "1";
+      const token = await AsyncStorage.getItem("userToken");
 
-      // ✅ 3. 서버에 이미지 전송 및 AI 생성 대기
-      const response = await generateCharacter(userPhoto, userId, token);
+      console.log("==========================================");
+      console.log("🚀 진짜 사진으로 AI 캐릭터 생성 시작");
+      console.log("🔑 토큰 상태:", token ? "보유 중" : "없음");
+      console.log("==========================================");
+
+      if (!token) {
+        Alert.alert("알림", "로그인 세션이 만료되었습니다.");
+        navigation.navigate("Login");
+        return;
+      }
+
+      // ✅ [중요] lightTestImage 대신 진짜 userPhoto를 보냅니다.
+      const response = await generateCharacter(userPhoto, token);
 
       if (response && response.data && response.data.characterUrl) {
-        // ✅ 4. 성공 시 결과 페이지로 이동 (AI가 생성한 이미지 URL 전달)
+        console.log("✅ 캐릭터 생성 성공!");
         navigation.replace("CharacterResult", {
           generatedImage: response.data.characterUrl,
         });
       }
     } catch (error) {
-      console.error("캐릭터 생성 실패:", error);
+      console.log("❌ 캐릭터 생성 에러 발생");
+
+      if (error.response) {
+        console.log("상태 코드:", error.response.status);
+      } else {
+        console.log("에러 메시지:", error.message);
+      }
+
       Alert.alert(
         "생성 실패",
-        "AI가 캐릭터를 생성하는 중에 문제가 발생했습니다.",
+        "이미지 분석 시간이 초과되었거나 서버 연결이 원활하지 않습니다.",
       );
-      navigation.goBack(); // 실패 시 이전 화면으로
+      navigation.goBack();
     }
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-
       <View style={styles.overlay}>
         <View style={styles.imageContainer}>
+          {/* 로딩 중 보여줄 기본 캐릭터 아이콘 */}
           <Image
             source={{
               uri: "https://cdn-icons-png.flaticon.com/512/3532/3532851.png",
@@ -69,11 +85,9 @@ export default function CharacterCreate() {
             resizeMode="contain"
           />
           <View style={styles.loaderWrapper}>
-            {/* 뱅글뱅글 돌아가는 로딩 표시 */}
             <ActivityIndicator size="large" color="#82C9F9" />
           </View>
         </View>
-
         <View style={styles.textGroup}>
           <Text style={styles.mainInfoText}>캐릭터 생성 중...</Text>
           <Text style={styles.subInfoText}>
@@ -81,11 +95,10 @@ export default function CharacterCreate() {
           </Text>
         </View>
 
-        {/* 생성 중 취소 버튼 */}
+        {/* 생성 중 취소 버튼 추가 */}
         <TouchableOpacity
           style={styles.cancelBtn}
           onPress={() => navigation.goBack()}
-          activeOpacity={0.8}
         >
           <Text style={styles.cancelBtnText}>취소</Text>
         </TouchableOpacity>
