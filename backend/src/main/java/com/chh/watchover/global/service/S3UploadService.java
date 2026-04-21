@@ -18,7 +18,7 @@ public class S3UploadService {
 
     private final AmazonS3 amazonS3;
 
-    @Value("${cloud.aws.s3.bucket}")
+    @Value("${S3_BUCKET_NAME}")
     private String bucket;
 
     public String upload(byte[] imageBytes, String fileName) {

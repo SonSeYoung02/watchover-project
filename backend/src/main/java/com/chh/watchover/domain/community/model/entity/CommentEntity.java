@@ -46,14 +46,13 @@ public class CommentEntity {
         return CommentEntity.builder()
                 .user(user)
                 .post(post)
-                .content(dto.getContent())
+                .content(dto.content())
                 .build();
     }
 
     public void updateComment(CommentEditRequestDto dto) {
-        if (content != null) {
-            this.content = dto.getContent();
-            System.out.println(dto.getContent());
+        if (dto.content() != null) {
+            this.content = dto.content();
             this.updatedAt = LocalDateTime.now();
         }
     }

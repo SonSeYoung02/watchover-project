@@ -1,0 +1,7 @@
+# OpenAI API Key 설정 (환경변수에서 읽어옴)
+spring:
+  config:
+    import: "optional:file:.env.prod[.properties]"
+  openai:
+    api:
+      key: ${OPENAI_API_KEY}

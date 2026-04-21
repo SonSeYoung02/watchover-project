@@ -58,6 +58,7 @@ public class CommunityService {
     - 성공시 ApiResponse(표준 응답 포멧)으로 반환
     ============================================================================
     */
+    @Transactional
     public ApiResponse<PostWriteResponseDto> postWrite(PostWriteRequestDto dto, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -89,7 +90,7 @@ public class CommunityService {
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         if (!post.getUser().getLoginId().equals(loginId)) {throw (new CustomException(ErrorCode.FORBIDDEN_ACCESS));}
-        post.updatePost(dto.getTitle(),dto.getContent());
+        post.updatePost(dto.title(), dto.content());
         String nickname = user.getNickname();
         PostUpdateResponseDto postUpdateResponseDto = PostUpdateResponseDto.of(post, nickname);
         return ApiResponse.success(postUpdateResponseDto);
@@ -104,6 +105,7 @@ public class CommunityService {
     - 성공 응답포멧 반환(반환값 null)
     ============================================================================
     */
+    @Transactional
     public ApiResponse<Void> postDelete(Long postId) {
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
@@ -142,6 +144,7 @@ public class CommunityService {
     - 좋아요 Dto를 생성해서 표준 응답 포멧으로 반환
     ============================================================================
     */
+    @Transactional
     public ApiResponse<LikePostResponseDto> likePost(Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -189,6 +192,7 @@ public class CommunityService {
     - 성공시 ApiResponse(표준 응답 포멧)으로 반환
     ============================================================================
     */
+    @Transactional
     public ApiResponse<CommentWriteResponseDto> commentWrite(CommentWriteRequestDto dto, Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -250,12 +254,13 @@ public class CommunityService {
     - 북마크 Dto를 생성해서 표준 응답 포멧으로 반환
     ============================================================================
     */
+    @Transactional
     public ApiResponse<BookmarkResponseDto> bookmark(Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        Optional<BookmarkEntity> bookmarkOpt = bookmarkRepository.findByUser_userIdAndPost_postId(post.getPostId(), user.getUserId());
+        Optional<BookmarkEntity> bookmarkOpt = bookmarkRepository.findByUser_userIdAndPost_postId(user.getUserId(), post.getPostId());
         boolean isBookmark;
         if (bookmarkOpt.isPresent()) {
             bookmarkRepository.delete(bookmarkOpt.get());
