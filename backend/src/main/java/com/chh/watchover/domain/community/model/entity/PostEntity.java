@@ -5,6 +5,7 @@ import com.chh.watchover.domain.user.model.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -31,6 +32,7 @@ public class PostEntity {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Builder.Default
     @Column(name = "like_count")
     private int likeCount = 0;
 
@@ -38,14 +40,15 @@ public class PostEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     public static PostEntity of(PostWriteRequestDto dto, UserEntity user) {
         return PostEntity.builder()
                 .user(user)
-                .title(dto.getTitle())
-                .content(dto.getContent())
+                .title(dto.title())
+                .content(dto.content())
                 .build();
     }
 

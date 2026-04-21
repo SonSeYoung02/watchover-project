@@ -1,0 +1,15 @@
+spring:
+  config:
+    import: "optional:file:.env.dev[.properties]"
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "jdbc:mysql://${DB_URL_DEV}:${DB_PORT_DEV}/${DB_NAME_DEV}?serverTimezone=Asia/Seoul"
+    username: "${DB_USERNAME_DEV}"
+    password: "${DB_PASSWORD_DEV}"
+  # 테이블 자동생성
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  jwt:
+    secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="

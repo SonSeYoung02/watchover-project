@@ -164,6 +164,20 @@ gradle-app.setting
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
+### Claude & AI Tools ###
+.omc/
+.claude/
+.claudefiles/
+.claude_settings
+.claude-session
+claude_config.json
+AGENT.md
+
+# MCP (Model Context Protocol) related
+.mcp/
+mcp-servers.json
+mcp_config.json
+
 ### Gradle Patch ###
 # Java heap dump
 *.hprof
@@ -171,5 +185,5 @@ gradle-app.setting
 # End of https://www.toptal.com/developers/gitignore/api/java,windows,gradle,intellij+all
 
 # 환경변수
-*.env
-
+*.env.dev
+*.env.prod

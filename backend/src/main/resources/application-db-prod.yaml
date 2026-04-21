@@ -1,0 +1,14 @@
+spring:
+  config:
+    import: "optional:file:.env.prod[.properties]"
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "jdbc:mysql://${DB_URL_PROD}:${DB_PORT_PROD}/${DB_NAME_PROD}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul"
+    username: "${DB_USERNAME_PROD}"
+    password: "${DB_PASSWORD_PROD}"
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  jwt:
+    secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="

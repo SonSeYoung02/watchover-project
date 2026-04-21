@@ -2,32 +2,26 @@ package com.chh.watchover.domain.community.model.dto;
 
 import com.chh.watchover.domain.community.model.entity.PostEntity;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Builder
-@Getter
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@JsonPropertyOrder({"postId","title","content","likeCount","createdAt","updatedAt"})
-public class ListPostResponseDto {
-
-    private Long postId;
-    private String title;
-    private String content;
-    private int likeCount;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
+@JsonPropertyOrder({"postId", "title", "content", "likeCount", "createdAt", "updatedAt"})
+public record ListPostResponseDto(
+        Long postId,
+        String title,
+        String content,
+        int likeCount,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {
     public static ListPostResponseDto from(PostEntity post) {
-        return ListPostResponseDto.builder()
-                .postId(post.getPostId())
-                .title(post.getTitle())
-                .content(post.getContent())
-                .likeCount(post.getLikeCount())
-                .createdAt(post.getCreatedAt())
-                .updatedAt(post.getUpdatedAt())
-                .build();
+        return new ListPostResponseDto(
+                post.getPostId(),
+                post.getTitle(),
+                post.getContent(),
+                post.getLikeCount(),
+                post.getCreatedAt(),
+                post.getUpdatedAt()
+        );
     }
 }

@@ -1,62 +1,9 @@
 spring:
-  profiles:
-    active: dev
   application:
     name: watchover
-
-  config:
-   import:
-     - optional:file:global.env[.properties]
-
----
-spring:
-  config:
-    import: optional:file:prod.env[.properties]
-    activate:
-      on-profile: prod
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: "jdbc:mysql://${DB_URL_PROD}:${DB_PORT_PROD}/${DB_NAME_PROD}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul"
-    username: ${DB_USERNAME_PROD}
-    password: ${DB_PASSWORD_PROD}
-  jwt:
-    secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="
----
-spring:
-  config:
-    import: optional:file:dev.env[.properties]
-    activate:
-      on-profile: dev
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: "jdbc:mysql://${DB_URL_DEV}:${DB_PORT_DEV}/${DB_NAME_DEV}?serverTimezone=Asia/Seoul"
-    username: ${DB_USERNAME_DEV}
-    password: ${DB_PASSWORD_DEV}
-  # 테이블 자동생성
-  jpa:
-    hibernate:
-      ddl-auto: update
-
-    show-sql: true
-  jwt:
-    secret: "eCFWi0/trNNB5Szll0imG3+EfsbvL+OHtAK+rZ+48PjdfcL3x8Sp5KT6FZLL8gT7zPBk3tiOSu1w3zJ+dhOmQg=="
-
-  # OpenAI API Key 설정 (환경변수에서 읽어옴)
-  openai:
-    api:
-      key: ${OPENAI_API_KEY}
-
-  # AWS S3 설정 (새로 추가)
-cloud:
-  aws:
-    s3:
-      bucket: ${S3_BUCKET_NAME}
-    credentials:
-      access-key: ${AWS_ACCESS_KEY}
-      secret-key: ${AWS_SECRET_KEY}
-    region:
-      static: ap-northeast-2
-    stack:
-      auto: false # EC2에서 실행할 때 불필요한 스택 확인 방지
-
-
+  profiles:
+    active: prod
+    group:
+      local: "db-dev, s3, ai"               # 로컬 테스트
+      dev: "server-dev, db-prod, s3, ai"   # 개발 서버 -> 추후에 DB 분리 필요
+      prod: "server-prod, db-prod, s3, ai" # 운영 서버
