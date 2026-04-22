@@ -46,18 +46,14 @@ public class CommunityService {
         this.likeRepository = likeRepository;
     }
 
-    /*
-    ============================================================================
-    1. 게시물 작성
-    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
-        - UserEntity가 비어있는 경우 ErrorCode 반환
-    - 유저를 못찾는 경우 에러 반환
-    - PostEntity 빌드
-    - PostEntity 저장
-    - PostWriteResponseDto 반환
-    - 성공시 ApiResponse(표준 응답 포멧)으로 반환
-    ============================================================================
-    */
+    /**
+     * 새 게시물을 작성하고 저장합니다.
+     *
+     * @param dto     게시물 작성 요청 정보 (제목, 내용 등)
+     * @param loginId 게시물을 작성하는 사용자의 로그인 아이디
+     * @return 작성된 게시물 정보를 담은 표준 응답
+     * @throws CustomException 해당 로그인 아이디의 사용자가 존재하지 않는 경우
+     */
     @Transactional
     public ApiResponse<PostWriteResponseDto> postWrite(PostWriteRequestDto dto, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
@@ -69,20 +65,15 @@ public class CommunityService {
         return ApiResponse.success(postWriteResponseDto);
     }
 
-    /*
-    ============================================================================
-    2. 게시물 수정
-    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
-        - UserEntity가 비어있는 경우 ErrorCode 반환
-    - PostEntity가 null이 아닌지 확인 후 Optional을 열어 post에 저장
-        - PostEntity가 비어있는 경우 ErrorCode 반환
-    - 만약 loginId의 유저가 게시물 작성자가 아니면 에러 반환
-    - 게시물 업데이트
-    - 유저 닉네임 nickname변수에 저장
-    - PostUpdateResponseDto 생성후 post와 nickname을 담아서 생성
-    - 공동 응답 포멧으로 반환
-    ============================================================================
-    */
+    /**
+     * 기존 게시물의 제목과 내용을 수정합니다. 작성자 본인만 수정할 수 있습니다.
+     *
+     * @param dto     게시물 수정 요청 정보 (제목, 내용)
+     * @param loginId 수정을 요청하는 사용자의 로그인 아이디
+     * @param postId  수정할 게시물의 고유 ID
+     * @return 수정된 게시물 정보를 담은 표준 응답
+     * @throws CustomException 사용자 또는 게시물이 존재하지 않거나 작성자가 아닌 경우
+     */
     @Transactional
     public ApiResponse<PostUpdateResponseDto> postUpdate(PostUpdateRequestDto dto,String loginId, Long postId) {
         UserEntity user = userRepository.findByLoginId(loginId)
@@ -96,15 +87,13 @@ public class CommunityService {
         return ApiResponse.success(postUpdateResponseDto);
     }
 
-    /*
-    ============================================================================
-    3. 게시물 삭제
-    - 게시물 ID를 찾아서 post 객체로 넘김
-        - 만약 postId가 null 이면 오류 반환
-    - 게시물 저장소에서 게시물 삭제
-    - 성공 응답포멧 반환(반환값 null)
-    ============================================================================
-    */
+    /**
+     * 게시물 ID에 해당하는 게시물을 삭제합니다.
+     *
+     * @param postId 삭제할 게시물의 고유 ID
+     * @return 데이터 없이 성공만을 나타내는 표준 응답
+     * @throws CustomException 해당 ID의 게시물이 존재하지 않는 경우
+     */
     @Transactional
     public ApiResponse<Void> postDelete(Long postId) {
         PostEntity post = postRepository.findById(postId)
@@ -113,37 +102,26 @@ public class CommunityService {
         return ApiResponse.success(null);
     }
 
-    /*
-    ============================================================================
-    4. 전체 게시물 조회
-    - DB에서 페이징된 엔티티 뭉치를 가져온다.(게시물을 createdAt 시간 순서대로 Desc(올림차)순으로 정렬한다.)
-    - 엔티티를 DTO로 변환하여 최종 응답 객체를 만든다.
-    ============================================================================
-    */
+    /**
+     * 전체 게시물을 페이징하여 조회합니다.
+     *
+     * @param pageable 페이지 번호, 크기, 정렬 기준을 담은 페이징 정보
+     * @return 페이징된 게시물 목록을 담은 표준 응답
+     */
     public ApiResponse<ListPostPageResponseDto> listPost(Pageable pageable) {
         Page<PostEntity> postPage = postRepository.findAll(pageable);
         ListPostPageResponseDto pageDto = ListPostPageResponseDto.from(postPage);
         return ApiResponse.success(pageDto);
     }
 
-    /*
-    ============================================================================
-    5. 좋아요 생성
-    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
-        - UserEntity가 비어있는 경우 ErrorCode 반환
-    - PostEntity가 null이 아닌지 확인 후 Optional을 열어 post에 저장
-        - PostEntity가 비어있는 경우 ErrorCode 반환
-    - LikeEntity가 null이 아닌지 확인후 Optional을 열어 likeOpt에 저장(에러는 반환하지 않음)
-    - 좋아요가 되어있는지 확인(좋아요 토글 형식)
-        - 만약 좋아요가 되어있으면
-            - 좋아요 삭제
-            - PostEntity 필드의 likeCount--
-        - 만약 좋아요가 되어있지 않으면
-            - 좋아요 생성
-            - PostEntity 필드의 likeCount++
-    - 좋아요 Dto를 생성해서 표준 응답 포멧으로 반환
-    ============================================================================
-    */
+    /**
+     * 게시물에 좋아요를 토글합니다. 이미 좋아요가 되어 있으면 취소하고, 없으면 추가합니다.
+     *
+     * @param postId  좋아요를 토글할 게시물의 고유 ID
+     * @param loginId 요청하는 사용자의 로그인 아이디
+     * @return 좋아요 처리 결과(게시물 ID, 현재 좋아요 상태)를 담은 표준 응답
+     * @throws CustomException 사용자 또는 게시물이 존재하지 않는 경우
+     */
     @Transactional
     public ApiResponse<LikePostResponseDto> likePost(Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
@@ -166,32 +144,27 @@ public class CommunityService {
         return ApiResponse.success(dto);
     }
 
-    /*
-    ============================================================================
-    5. 유저가 작성한 게시물 조회
-    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
-    - pageDto를 이용해서 페이지 반환
-    ============================================================================
-    */
+    /**
+     * 게시물을 인기순으로 페이징하여 조회합니다.
+     *
+     * @param pageable 페이지 번호, 크기, 정렬 기준을 담은 페이징 정보
+     * @return 페이징된 게시물 목록을 담은 표준 응답
+     */
     public ApiResponse<ListPostPageResponseDto> popularPost(Pageable pageable) {
         Page<PostEntity> postPage = postRepository.findAll(pageable);
         ListPostPageResponseDto pageDto = ListPostPageResponseDto.from(postPage);
         return ApiResponse.success(pageDto);
     }
 
-    /*
-    ============================================================================
-    1. 댓글 작성
-    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
-        - UserEntity가 비어있는 경우 ErrorCode 반환
-    - PostEntity가 null이 아닌지 확인 후 Optional을 열어 post에 저장
-        - PostEntity가 비어있는 경우 ErrorCode 반환
-    - CommentEntity 빌드(인자값: CommentWriteRequestDto, UserEntity)
-    - CommentEntity 저장(인자값: CommentEntity)
-    - CommentWriteRequestDto 반환(인자값: CommentEntity, UserEntity)
-    - 성공시 ApiResponse(표준 응답 포멧)으로 반환
-    ============================================================================
-    */
+    /**
+     * 특정 게시물에 댓글을 작성하고 저장합니다.
+     *
+     * @param dto     댓글 작성 요청 정보 (댓글 내용 등)
+     * @param postId  댓글을 작성할 게시물의 고유 ID
+     * @param loginId 댓글을 작성하는 사용자의 로그인 아이디
+     * @return 작성된 댓글 정보를 담은 표준 응답
+     * @throws CustomException 사용자 또는 게시물이 존재하지 않는 경우
+     */
     @Transactional
     public ApiResponse<CommentWriteResponseDto> commentWrite(CommentWriteRequestDto dto, Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
@@ -204,10 +177,15 @@ public class CommunityService {
         return ApiResponse.success(commentWriteResponseDto);
     }
 
-    /*
-    ============================================================================
-    2. 댓글 수정
-    ============================================================================
+    /**
+     * 특정 게시물의 댓글을 수정합니다. 댓글 작성자 본인만 수정할 수 있습니다.
+     *
+     * @param dto       댓글 수정 요청 정보 (수정할 내용)
+     * @param postId    댓글이 속한 게시물의 고유 ID
+     * @param commentId 수정할 댓글의 고유 ID
+     * @param loginId   수정을 요청하는 사용자의 로그인 아이디
+     * @return 수정된 댓글 정보를 담은 표준 응답
+     * @throws CustomException 사용자·게시물·댓글이 존재하지 않거나, 작성자가 아니거나, 댓글이 해당 게시물에 속하지 않는 경우
      */
     @Transactional
     public ApiResponse<CommentEditResponseDto> commentEdit(CommentEditRequestDto dto, Long postId, Long commentId, String loginId) {
@@ -229,10 +207,11 @@ public class CommunityService {
         return ApiResponse.success(commentEditResponseDto);
     }
 
-    /*
-    ============================================================================
-    3. 사용자의 댓글 전체 조회
-    ============================================================================
+    /**
+     * 전체 댓글을 페이징하여 조회합니다.
+     *
+     * @param pageable 페이지 번호, 크기, 정렬 기준을 담은 페이징 정보
+     * @return 페이징된 댓글 목록을 담은 표준 응답
      */
     public ApiResponse<ListCommentPageResponseDto> listComment(Pageable pageable) {
         Page<CommentEntity> commentPage = commentRepository.findAll(pageable);
@@ -240,20 +219,14 @@ public class CommunityService {
         return ApiResponse.success(pageDto);
     }
 
-    /*
-    ============================================================================
-    1. 북마크 생성
-    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
-        - UserEntity가 비어있는 경우 ErrorCode 반환
-    - PostEntity가 null이 아닌지 확인 후 Optional을 열어 post에 저장
-        - PostEntity가 비어있는 경우 ErrorCode 반환
-    - BookmarkEntity가 null이 아닌지 확인후 Optional을 열어 bookmarkOpt에 저장(에러는 반환하지 않음)
-    - 북마크가 되어있는지 확인(북마크 토글 형식)
-        - 만약 북마크가 되어있으면 북마크 삭제
-        - 만약 북마크가 되어있지 않으면 북마크 생성
-    - 북마크 Dto를 생성해서 표준 응답 포멧으로 반환
-    ============================================================================
-    */
+    /**
+     * 게시물에 북마크를 토글합니다. 이미 북마크가 되어 있으면 취소하고, 없으면 추가합니다.
+     *
+     * @param postId  북마크를 토글할 게시물의 고유 ID
+     * @param loginId 요청하는 사용자의 로그인 아이디
+     * @return 북마크 처리 결과(게시물 ID, 현재 북마크 상태)를 담은 표준 응답
+     * @throws CustomException 사용자 또는 게시물이 존재하지 않는 경우
+     */
     @Transactional
     public ApiResponse<BookmarkResponseDto> bookmark(Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)

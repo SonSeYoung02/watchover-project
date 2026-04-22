@@ -20,6 +20,16 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
 
+    /**
+     * HTTP 요청마다 한 번 실행되며, Authorization 헤더에서 Bearer 토큰을 추출하여
+     * JWT 유효성을 검증한 후 인증 정보를 SecurityContext에 등록한다.
+     *
+     * @param request     클라이언트의 HTTP 요청 객체
+     * @param response    서버의 HTTP 응답 객체
+     * @param filterChain 다음 필터로 요청을 전달하는 필터 체인
+     * @throws ServletException 서블릿 처리 중 오류가 발생한 경우
+     * @throws IOException      입출력 처리 중 오류가 발생한 경우
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {

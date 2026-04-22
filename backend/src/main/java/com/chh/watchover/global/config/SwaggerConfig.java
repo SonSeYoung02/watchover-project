@@ -11,6 +11,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
+    /**
+     * Watchover API의 OpenAPI 스펙을 구성합니다.
+     * <p>
+     * JWT Bearer 인증 스킴을 전역으로 적용하며, Swagger UI에서 인증 헤더를 설정할 수 있도록 합니다.
+     *
+     * @return JWT 인증이 포함된 {@link OpenAPI} 인스턴스
+     */
     @Bean
     public OpenAPI openAPI() {
         String jwtScheme = "bearerAuth";

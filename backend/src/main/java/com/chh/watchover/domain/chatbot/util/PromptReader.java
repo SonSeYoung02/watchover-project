@@ -16,6 +16,13 @@ public class PromptReader {
         this.resourceLoader = resourceLoader;
     }
 
+    /**
+     * 지정한 파일 이름에 해당하는 프롬프트 파일을 classpath에서 읽어 문자열로 반환합니다.
+     *
+     * @param fileName 읽을 프롬프트 파일 이름 (확장자 .md 제외)
+     * @return 프롬프트 파일의 전체 내용 문자열
+     * @throws RuntimeException 파일을 읽을 수 없는 경우
+     */
     public String readPrompt(String fileName) {
         try {
             Resource resource = resourceLoader.getResource("classpath:prompts/" + fileName + ".md");

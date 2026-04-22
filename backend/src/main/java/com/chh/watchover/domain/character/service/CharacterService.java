@@ -43,6 +43,16 @@ public class CharacterService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * 사용자 사진을 분석하여 2D 캐릭터 이미지를 생성하고 S3에 업로드한 뒤 DB에 저장합니다.
+     * GPT-4o로 사진의 시각적 특징을 추출하고, DALL-E 3로 캐릭터 이미지를 생성합니다.
+     *
+     * @param userPhoto 캐릭터 생성에 사용할 사용자 사진 파일
+     * @param userId    캐릭터를 생성할 사용자의 고유 ID
+     * @return S3에 업로드된 캐릭터 이미지의 URL
+     * @throws IOException      사진 파일을 읽거나 처리하는 중 오류가 발생한 경우
+     * @throws RuntimeException 사용자를 찾을 수 없거나 이미지 저장 중 오류가 발생한 경우
+     */
     @Transactional
     public String createMultimodalCharacter(MultipartFile userPhoto, Long userId) throws IOException {
         // 0. 기본 프롬프트 로드

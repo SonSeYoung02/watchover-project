@@ -20,6 +20,13 @@ public class CharacterController {
 
     private final CharacterService characterService;
 
+    /**
+     * 업로드된 이미지를 기반으로 AI 캐릭터를 생성하고 S3에 저장한다.
+     *
+     * @param image  캐릭터 생성에 사용할 원본 이미지 파일
+     * @param userId 캐릭터를 소유할 사용자의 고유 식별자
+     * @return 생성된 캐릭터 이미지의 S3 URL을 담은 ResponseEntity
+     */
     @Operation(summary = "캐릭터 생성")
     @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<CharacterResponse>> generateCharacter(

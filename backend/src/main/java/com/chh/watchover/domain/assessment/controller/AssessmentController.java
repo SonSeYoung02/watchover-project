@@ -18,6 +18,12 @@ public class AssessmentController {
 
     private final AssessmentService assessmentService;
 
+    /**
+     * 현재 로그인된 사용자의 심리검사 결과 목록을 조회한다.
+     *
+     * @param loginId JWT에서 추출된 현재 사용자의 로그인 아이디
+     * @return 해당 사용자의 심리검사 결과 리스트를 담은 ApiResponse
+     */
     @Operation(summary = "내 심리검사 결과 조회")
     @GetMapping
     public ApiResponse<List<AssessmentResponseDto>> getMyResults(

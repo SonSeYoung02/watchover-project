@@ -25,6 +25,12 @@ public class AnalysisController {
     private final AnalysisService analysisService;
     private final UserRepository userRepository;
 
+    /**
+     * 특정 채팅방의 대화 내역을 감정 분석하여 달력에 저장한다.
+     *
+     * @param chatRoomId 감정 분석을 수행할 채팅방의 고유 식별자
+     * @return 감정 분석 결과와 저장 시각을 담은 ApiResponse
+     */
     // 특정 채팅방의 대화를 분석해서 달력에 저장하는 API
     @Operation(summary = "채팅방 감정 분석 후 달력 저장")
     @PostMapping("/{chatingRoomId}")
@@ -41,6 +47,12 @@ public class AnalysisController {
         return ApiResponse.success(data);
     }
 
+    /**
+     * 현재 로그인된 사용자의 이번 달 감정 통계를 조회한다.
+     *
+     * @param loginId JWT에서 추출된 현재 사용자의 로그인 아이디
+     * @return 이번 달 감정 유형별 통계 목록을 담은 ApiResponse
+     */
     @Operation(summary = "이번 달 감정 통계 조회")
     @GetMapping("/stats")
     public ApiResponse<List<EmotionStatResponse>> getMonthlyStats(

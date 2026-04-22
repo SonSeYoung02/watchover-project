@@ -21,6 +21,11 @@ public class BannerController {
 
     private final BannerService bannerService;
 
+    /**
+     * 현재 활성화된 배너 목록 전체를 조회한다.
+     *
+     * @return 활성 배너 리스트를 담은 ResponseEntity
+     */
     // 기존: GET /api/banners
     @Operation(summary = "활성 배너 전체 조회")
     @GetMapping
@@ -29,6 +34,12 @@ public class BannerController {
         return ResponseEntity.ok(ApiResponse.success(activeBanners));
     }
 
+    /**
+     * 특정 ID에 해당하는 활성 배너 단건을 조회한다.
+     *
+     * @param id 조회할 배너의 고유 식별자
+     * @return 조회된 배너 정보를 담은 ResponseEntity
+     */
     // 추가: GET /api/banners/{id}
     @Operation(summary = "배너 단건 조회")
     @GetMapping("/{id}")

@@ -17,7 +17,11 @@ public class AssessmentService {
     private final UserRepository userRepository;
 
     /**
-     * 로그인 아이디(String)로 검사 결과 목록을 조회합니다.
+     * 로그인 아이디로 해당 사용자의 심리 검사 결과 목록을 조회합니다.
+     *
+     * @param loginId 조회할 사용자의 로그인 아이디
+     * @return 해당 사용자의 심리 검사 결과 DTO 목록
+     * @throws IllegalArgumentException 해당 로그인 아이디의 사용자가 존재하지 않는 경우
      */
     @Transactional(readOnly = true)
     public List<AssessmentResponseDto> getUserAssessmentsByLoginId(String loginId) {

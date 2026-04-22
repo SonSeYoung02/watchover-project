@@ -21,8 +21,12 @@ public class ChatController {
     private final ChatService chatService;
 
     /**
-     * 1. AI에게 질문하고 답변 받기
-     * URL: POST /api/chatBot/{chatingRoomId}
+     * AI 챗봇에게 메시지를 전송하고 답변을 받는다.
+     *
+     * @param loginId    JWT에서 추출된 현재 사용자의 로그인 아이디
+     * @param chatRoomId 메시지를 전송할 채팅방의 고유 식별자
+     * @param request    전송할 메시지 및 프롬프트 파일 정보를 담은 요청 DTO
+     * @return AI의 답변을 담은 ApiResponse
      */
     @Operation(summary = "AI에게 메시지 전송")
     @PostMapping("/{chatingRoomId}")
@@ -43,8 +47,11 @@ public class ChatController {
     }
 
     /**
-     * 2. 특정 채팅방의 모든 대화 내역 가져오기
-     * URL: GET /api/chatBot/{chatingRoomId}
+     * 특정 채팅방의 전체 대화 내역을 조회한다.
+     *
+     * @param loginId    JWT에서 추출된 현재 사용자의 로그인 아이디 (본인 채팅 내역 검증용)
+     * @param chatRoomId 조회할 채팅방의 고유 식별자
+     * @return 해당 채팅방의 전체 대화 내역 리스트를 담은 ApiResponse
      */
     @Operation(summary = "채팅방 대화 내역 조회")
     @GetMapping("/{chatingRoomId}")
