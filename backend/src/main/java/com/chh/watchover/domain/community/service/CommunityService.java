@@ -13,7 +13,7 @@ import com.chh.watchover.domain.user.model.entity.UserEntity;
 import com.chh.watchover.domain.user.repository.UserRepository;
 import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.global.exception.CustomException;
-import com.chh.watchover.global.exception.model.ErrorCode;
+import com.chh.watchover.global.exception.code.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

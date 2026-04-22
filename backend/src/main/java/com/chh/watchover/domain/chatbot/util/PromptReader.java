@@ -18,7 +18,7 @@ public class PromptReader {
 
     public String readPrompt(String fileName) {
         try {
-            Resource resource = resourceLoader.getResource("classpath:prompts/care-prompt");
+            Resource resource = resourceLoader.getResource("classpath:prompts/" + fileName + ".md");
             return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException("프롬프트 파일을 읽을 수 없습니다: " + fileName);

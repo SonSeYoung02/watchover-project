@@ -5,7 +5,7 @@ import com.chh.watchover.global.security.JwtTokenProvider;
 import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
 import com.chh.watchover.global.exception.CustomException;
-import com.chh.watchover.global.exception.model.ErrorCode;
+import com.chh.watchover.global.exception.code.ErrorCode;
 import com.chh.watchover.domain.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;

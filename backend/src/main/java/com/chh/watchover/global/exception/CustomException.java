@@ -1,10 +1,12 @@
 package com.chh.watchover.global.exception;
 
-import com.chh.watchover.global.exception.model.ErrorCode;
+import com.chh.watchover.global.exception.code.ErrorCode;
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 
 @Getter
 public class CustomException extends RuntimeException {
+
     private final ErrorCode errorCode;
 
     public CustomException(ErrorCode errorCode) {
@@ -12,4 +14,7 @@ public class CustomException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
+    public HttpStatus getHttpStatus() {
+        return errorCode.getHttpStatus();
+    }
 }
