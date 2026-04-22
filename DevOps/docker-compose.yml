@@ -5,10 +5,10 @@ services:
       dockerfile: Dockerfile
     container_name: watchover-prod
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - JWT_SECRET=${JWT_SECRET}
-      - PROD_SERVER_PORT=${PROD_SERVER_PORT}
     ports:
       - "${PROD_SERVER_PORT}:${PROD_SERVER_PORT}"
     networks:
