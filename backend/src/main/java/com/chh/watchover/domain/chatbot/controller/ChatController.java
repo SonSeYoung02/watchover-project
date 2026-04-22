@@ -4,12 +4,15 @@ import com.chh.watchover.domain.chatbot.model.dto.ChatRequest;
 import com.chh.watchover.domain.chatbot.model.dto.ChatResponse;
 import com.chh.watchover.domain.chatbot.service.ChatService;
 import com.chh.watchover.global.common.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "ChatBot", description = "AI 챗봇 API")
 @RestController
 @RequestMapping("/api/chatBot")
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class ChatController {
      * 1. AI에게 질문하고 답변 받기
      * URL: POST /api/chatBot/{chatingRoomId}
      */
+    @Operation(summary = "AI에게 메시지 전송")
     @PostMapping("/{chatingRoomId}")
     public ApiResponse<ChatResponse> ask(
             @AuthenticationPrincipal String loginId, // JWT에서 추출된 유저 식별자
@@ -42,6 +46,7 @@ public class ChatController {
      * 2. 특정 채팅방의 모든 대화 내역 가져오기
      * URL: GET /api/chatBot/{chatingRoomId}
      */
+    @Operation(summary = "채팅방 대화 내역 조회")
     @GetMapping("/{chatingRoomId}")
     public ApiResponse<List<ChatResponse>> getHistory(
             @AuthenticationPrincipal String loginId, // 본인의 채팅 내역인지 검증용

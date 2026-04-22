@@ -3,6 +3,8 @@ package com.chh.watchover.domain.community.controller;
 import com.chh.watchover.domain.community.model.dto.*;
 import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.domain.community.service.CommunityService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 
+@Tag(name = "Community", description = "커뮤니티 게시물/댓글/북마크 API")
 @RestController
 @RequestMapping("/api/community")
 public class CommunityController {
@@ -30,6 +33,7 @@ public class CommunityController {
     - PostWriteRequestDto와 loginId를 communityService에 반환
     =====================================================================
     */
+    @Operation(summary = "게시물 작성")
     @PostMapping("/post")
     public ApiResponse<PostWriteResponseDto> postWrite(@Valid @RequestBody PostWriteRequestDto postWriteRequestDto, Principal principal) {
         String loginId = principal.getName();
@@ -43,6 +47,7 @@ public class CommunityController {
     - postId를 communityService에 반환
     =====================================================================
     */
+    @Operation(summary = "게시물 수정")
     @PatchMapping("/post/{postId}")
     public ApiResponse<PostUpdateResponseDto> postUpdate(@PathVariable Long postId, @Valid @RequestBody PostUpdateRequestDto postUpdateRequestDto, Principal principal) {
         String loginId = principal.getName();
@@ -58,6 +63,7 @@ public class CommunityController {
     - 반환값은 없음
     =====================================================================
     */
+    @Operation(summary = "게시물 삭제")
     @DeleteMapping("/post/{postId}")
     public ApiResponse<Void> postDelete(@PathVariable Long postId) {
         return communityService.postDelete(postId);
@@ -70,6 +76,7 @@ public class CommunityController {
     - 10개의 post로 쪼개서 Dto에 저장
     =====================================================================
     */
+    @Operation(summary = "게시물 전체 조회")
     @GetMapping("/list")
     public ApiResponse<ListPostPageResponseDto> listPost(
             @RequestParam(defaultValue = "0") @Min(0) int page, // 현재 페이지
@@ -85,6 +92,7 @@ public class CommunityController {
     - 게시물 id를 넣어서 유저의 좋아요 생성
     =====================================================================
     */
+    @Operation(summary = "게시물 좋아요")
     @PostMapping("/post/{postId}/like")
     public ApiResponse<LikePostResponseDto> likePost(@PathVariable Long postId, Principal principal) {
         String loginId = principal.getName();
@@ -97,6 +105,7 @@ public class CommunityController {
     - 좋아요 순서로 데이터를 보내도록 강제함
     =====================================================================
     */
+    @Operation(summary = "인기 게시물 조회")
     @GetMapping("/post/popular")
     public ApiResponse<ListPostPageResponseDto> popularPost(
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -113,6 +122,7 @@ public class CommunityController {
     - CommentWriteRequestDto와 loginId를 communityService에 반환
     =====================================================================
     */
+    @Operation(summary = "댓글 작성")
     @PostMapping("/post/{postId}/comment")
     public ApiResponse<CommentWriteResponseDto> commentWrite(@PathVariable Long postId, @Valid @RequestBody CommentWriteRequestDto commentWriteRequestDto, Principal principal) {
         String loginId = principal.getName();
@@ -126,6 +136,7 @@ public class CommunityController {
     - DTO, postId, commentId, loginId 반환
     =====================================================================
     */
+    @Operation(summary = "댓글 수정")
     @PatchMapping("/post/{postId}/comment/{commentId}")
     public ApiResponse<CommentEditResponseDto> commentEdit(@PathVariable Long postId, @PathVariable Long commentId, @Valid @RequestBody CommentEditRequestDto commentEditRequestDto, Principal principal) {
         String loginId = principal.getName();
@@ -138,6 +149,7 @@ public class CommunityController {
     - 유저의 로그인 정보 전달
     =====================================================================
     */
+    @Operation(summary = "댓글 전체 조회")
     @GetMapping("/comment")
     public ApiResponse<ListCommentPageResponseDto> listComment(
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -154,6 +166,7 @@ public class CommunityController {
     - 게시물 번호와 유저의 로그인 아이디를 전달
     =====================================================================
     */
+    @Operation(summary = "북마크 토글")
     @PostMapping("/post/{postId}/bookmark")
     public ApiResponse<BookmarkResponseDto> bookmark(@PathVariable Long postId, Principal principal) {
         String loginId = principal.getName();

@@ -6,6 +6,8 @@ import com.chh.watchover.domain.user.model.entity.UserEntity;
 import com.chh.watchover.domain.user.repository.UserRepository;
 import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.domain.calendar.service.AnalysisService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Tag(name = "Calendar", description = "감정 분석 및 달력 API")
 @RestController
 @RequestMapping("/api/calendar/emotion")
 @RequiredArgsConstructor
@@ -23,6 +26,7 @@ public class AnalysisController {
     private final UserRepository userRepository;
 
     // 특정 채팅방의 대화를 분석해서 달력에 저장하는 API
+    @Operation(summary = "채팅방 감정 분석 후 달력 저장")
     @PostMapping("/{chatingRoomId}")
     public ApiResponse<AnalysisResponse> analyzeEmotion(
             @PathVariable("chatingRoomId") Long chatRoomId
@@ -37,6 +41,7 @@ public class AnalysisController {
         return ApiResponse.success(data);
     }
 
+    @Operation(summary = "이번 달 감정 통계 조회")
     @GetMapping("/stats")
     public ApiResponse<List<EmotionStatResponse>> getMonthlyStats(
             @AuthenticationPrincipal String loginId) {

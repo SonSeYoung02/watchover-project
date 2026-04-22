@@ -3,12 +3,15 @@ package com.chh.watchover.domain.user.controller;
 import com.chh.watchover.domain.user.model.dto.*;
 import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.domain.user.service.LoginService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
+@Tag(name = "User", description = "회원 관리 API")
 @RestController
 @RequestMapping("/api/user")
 public class LoginController {
@@ -27,6 +30,7 @@ public class LoginController {
     =====================================================================
     */
 
+    @Operation(summary = "회원가입")
     @PostMapping("/register")
     public ApiResponse<RegisterResponseDto> userId(@Valid @RequestBody RegisterRequestDto userRegisterRequestDto) {
         return loginService.userRegister(userRegisterRequestDto);
@@ -38,6 +42,7 @@ public class LoginController {
     - 유저를 userId를 통해서 찾는 메소드
     =====================================================================
     */
+    @Operation(summary = "유저 조회")
     @GetMapping("/search/{userId}")
     public ApiResponse<SearchResponseDto> userSearch(@PathVariable Long userId) {
         return loginService.userSearch(userId);
@@ -49,6 +54,7 @@ public class LoginController {
     - 유저의 정보를 확인하는 메소드
     =====================================================================
     */
+    @Operation(summary = "로그인")
     @PostMapping("/login")
     public ApiResponse<LoginResponseDto> userLogin(@Valid @RequestBody LoginRequestDto loginRequestDto) {
         return loginService.userLogin(loginRequestDto);
@@ -60,6 +66,7 @@ public class LoginController {
     - 유저의 계정을 삭제하는 기능
     =====================================================================
     */
+    @Operation(summary = "회원 탈퇴")
     @DeleteMapping("/delete")
     public ApiResponse<UserDeleteResponseDto> userDelete(Principal principal) {
         String loginId = principal.getName();
@@ -72,6 +79,7 @@ public class LoginController {
     - 유저의 정보를 수정하는 기능
     =====================================================================
     */
+    @Operation(summary = "회원 정보 수정")
     @PatchMapping("/update")
     public ApiResponse<UserUpdateResponseDto> userUpdate(@RequestBody UserUpdateRequestDto dto, Principal principal) {
         String logId = principal.getName();

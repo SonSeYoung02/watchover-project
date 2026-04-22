@@ -3,6 +3,8 @@ package com.chh.watchover.domain.character.controller;
 import com.chh.watchover.domain.character.model.dto.CharacterResponse;
 import com.chh.watchover.domain.character.service.CharacterService;
 import com.chh.watchover.global.common.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -10,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+@Tag(name = "Character", description = "캐릭터 생성 API")
 @RestController
 @RequestMapping("/api/characters")
 @RequiredArgsConstructor
@@ -17,6 +20,7 @@ public class CharacterController {
 
     private final CharacterService characterService;
 
+    @Operation(summary = "캐릭터 생성")
     @PostMapping(value = "/generate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<CharacterResponse>> generateCharacter(
             @RequestParam("image") MultipartFile image,
