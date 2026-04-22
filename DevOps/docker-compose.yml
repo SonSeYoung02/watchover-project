@@ -1,30 +1,6 @@
 version: '3.8'
 
 services:
-  dev:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
-    container_name: watchover-dev
-    restart: unless-stopped
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      DB_URL_PROD: ${DB_URL_PROD}
-      DB_PORT_PROD: ${DB_PORT_PROD}
-      DB_NAME_PROD: ${DB_NAME_PROD}
-      DB_USERNAME_PROD: ${DB_USERNAME_PROD}
-      DB_PASSWORD_PROD: ${DB_PASSWORD_PROD}
-      SERVER_IP: ${SERVER_IP}
-      DEV_SERVER_PORT: ${DEV_SERVER_PORT}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
-      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-    ports:
-      - "${DEV_SERVER_PORT}:${DEV_SERVER_PORT}"
-    networks:
-      - watchover-net
-
   prod:
     build:
       context: ../backend
@@ -32,18 +8,8 @@ services:
     container_name: watchover-prod
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_URL_PROD: ${DB_URL_PROD}
-      DB_PORT_PROD: ${DB_PORT_PROD}
-      DB_NAME_PROD: ${DB_NAME_PROD}
-      DB_USERNAME_PROD: ${DB_USERNAME_PROD}
-      DB_PASSWORD_PROD: ${DB_PASSWORD_PROD}
-      SERVER_IP: ${SERVER_IP}
-      PROD_SERVER_PORT: ${PROD_SERVER_PORT}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
-      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      - SPRING_PROFILES_ACTIVE=prod
+      - JWT_SECRET=${JWT_SECRET}
     ports:
       - "${PROD_SERVER_PORT}:${PROD_SERVER_PORT}"
     networks:
@@ -54,7 +20,6 @@ services:
     container_name: watchover-nginx
     restart: unless-stopped
     depends_on:
-      - dev
       - prod
     ports:
       - "80:80"

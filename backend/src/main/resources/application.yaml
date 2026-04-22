@@ -5,7 +5,6 @@ spring:
     active: prod
     group:
       local: "db-dev, s3, ai"               # 로컬 테스트
-      dev: "server-dev, db-prod, s3, ai"    # 개발 서버
       prod: "server-prod, db-prod, s3, ai"  # 운영 서버
 
   # 공통 DB 설정
