@@ -31,9 +31,6 @@ services:
       dockerfile: Dockerfile
     container_name: watchover-prod
     restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_URL_PROD: ${DB_URL_PROD}
