@@ -1,0 +1,13 @@
+# IDE 도구들
+.gradle/
+.idea/
+.omc/
+AGENTS.md
+
+# 환경변수
+DevOps/.env
+DevOps/nginx/ssh/
+
+# 운영체제 생성파일
+*.DS_Store
+.vscode/
