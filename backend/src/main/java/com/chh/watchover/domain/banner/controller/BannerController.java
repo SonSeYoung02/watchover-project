@@ -29,7 +29,6 @@ public class BannerController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BannerResponseDto>> getBannerById(@PathVariable("id") Long id) {
         BannerResponseDto banner = bannerService.getActiveBannerById(id);
-
         // 데이터가 리스트가 아닌 단일 객체로 응답됨
         return ResponseEntity.ok(ApiResponse.success(banner));
     }

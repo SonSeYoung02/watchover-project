@@ -5,5 +5,13 @@ spring:
     active: prod
     group:
       local: "db-dev, s3, ai"               # 로컬 테스트
-      dev: "server-dev, db-prod, s3, ai"   # 개발 서버 -> 추후에 DB 분리 필요
-      prod: "server-prod, db-prod, s3, ai" # 운영 서버
+      dev: "server-dev, db-prod, s3, ai"    # 개발 서버
+      prod: "server-prod, db-prod, s3, ai"  # 운영 서버
+
+  # 공통 DB 설정
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # 공통 JWT 설정
+  jwt:
+    secret: "${JWT_SECRET}"
