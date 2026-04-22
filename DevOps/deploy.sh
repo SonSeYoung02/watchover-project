@@ -11,7 +11,7 @@ cd backend
 
 echo ">>> Starting Docker containers..."
 cd ../DevOps
-docker-compose up --build -d
+sudo docker-compose up --build -d
 
 echo ">>> Done! Containers running:"
-docker-compose ps
+sudo docker-compose ps
