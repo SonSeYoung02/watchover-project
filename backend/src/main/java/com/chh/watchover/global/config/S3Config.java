@@ -20,6 +20,11 @@ public class S3Config {
     @Value("${AWS_REGION}")
     private String region;
 
+    /**
+     * AWS S3 클라이언트 빈을 생성하고 등록합니다.
+     *
+     * @return 액세스 키, 시크릿 키, 리전으로 구성된 AmazonS3 클라이언트
+     */
     @Bean
     public AmazonS3 amazonS3Client() {
         BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);

@@ -39,7 +39,11 @@ public class AnalysisService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     /**
-     * 채팅방의 대화 내역을 분석하여 사용자의 감정을 calendar_log 테이블에 저장합니다.
+     * 채팅방의 대화 내역을 OpenAI GPT-4o로 분석하여 사용자의 주된 감정을 추출하고 캘린더 로그에 저장합니다.
+     *
+     * @param chatRoomId 분석할 채팅방의 고유 ID
+     * @return OpenAI가 분석한 감정 문자열 (예: "기쁨", "슬픔", "화남", "혐오")
+     * @throws RuntimeException 채팅방이 존재하지 않는 경우
      */
     @Transactional
     public String analyzeAndSaveToCalendar(Long chatRoomId) {
@@ -109,6 +113,15 @@ public class AnalysisService {
         return analyzedEmotion;
     }
 
+    /**
+     * 특정 사용자의 월별 감정 통계를 조회합니다.
+     *
+     * @param loginId 조회할 사용자의 로그인 아이디
+     * @param year    조회할 연도
+     * @param month   조회할 월 (1~12)
+     * @return 해당 월의 감정별 통계 정보 목록
+     * @throws RuntimeException 해당 로그인 아이디의 사용자가 존재하지 않는 경우
+     */
     @Transactional(readOnly = true)
     public List<EmotionStatResponse> getMonthlyEmotionStats(String loginId, int year, int month) {
         // 1. 넘겨받은 식별자로 유저 엔티티 조회

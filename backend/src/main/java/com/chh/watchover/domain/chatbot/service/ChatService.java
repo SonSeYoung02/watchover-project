@@ -38,6 +38,17 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository; // 추가
     private final RestTemplate restTemplate = new RestTemplate();
 
+    /**
+     * 사용자의 메시지를 OpenAI GPT-4o에 전달하고 응답을 받아 대화 내역을 DB에 저장합니다.
+     * 채팅방이 존재하지 않으면 자동으로 생성합니다.
+     *
+     * @param loginId     요청하는 사용자의 로그인 아이디
+     * @param chatRoomId  대화를 진행할 채팅방의 고유 ID (없으면 자동 생성)
+     * @param promptFile  사용할 시스템 프롬프트 파일명
+     * @param userMessage 사용자가 입력한 메시지
+     * @return 채팅방 ID와 AI 응답 내용을 담은 ChatResponse
+     * @throws RuntimeException 해당 로그인 아이디의 사용자가 존재하지 않는 경우
+     */
     @Transactional
     public ChatResponse getChatResponse(String loginId, Long chatRoomId, String promptFile, String userMessage) {
         UserEntity user = userRepository.findByLoginId(loginId)
@@ -104,6 +115,12 @@ public class ChatService {
 
     }
 
+    /**
+     * 특정 채팅방의 대화 내역을 시간순으로 조회합니다.
+     *
+     * @param chatRoomId 조회할 채팅방의 고유 ID
+     * @return 시간순으로 정렬된 대화 메시지 목록
+     */
     @Transactional(readOnly = true) // 단순 조회이므로 readOnly를 붙여주면 성능상 이득이 있습니다.
     public List<ChatResponse> getChatHistory(Long chatRoomId) {
         // 1. 해당 방의 모든 메시지를 시간순으로 조회
