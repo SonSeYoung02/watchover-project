@@ -1,5 +1,5 @@
 # 실행 환경 설정
-FROM openjdk:17
+FROM eclipse-temurin:17-jdk-alpine
 
 # 실행할 디렉토리
 WORKDIR /backend
