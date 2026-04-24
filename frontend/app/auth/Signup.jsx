@@ -1,10 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
-import { ChevronLeft, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react-native';
+import { ChevronLeft, Eye, EyeOff, Lock, Mail, User, Info, CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -17,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // ✅ 변경: client 대신 authApi에서 signup 함수 임포트
 import { signup } from '../api/authApi'; 
 
-const InputField = ({ label, icon: Icon, required, helper, ...props }) => {
+const InputField = ({ label, icon: Icon, required, helper, hasError, ...props }) => {
   return (
     <View style={fieldStyles.wrap}>
       <Text style={fieldStyles.label}>
@@ -27,12 +28,25 @@ const InputField = ({ label, icon: Icon, required, helper, ...props }) => {
       <View style={fieldStyles.inputRow}>
         {Icon && (
           <View style={fieldStyles.iconWrap}>
-            <Icon size={17} color="#94A3B8" />
+            <Icon size={17} color={hasError ? "#EF4444" : "#94A3B8"} />
           </View>
         )}
-        <TextInput style={[fieldStyles.input, Icon && { paddingLeft: 44 }]} placeholderTextColor="#C0CCDA" {...props} />
+        <TextInput 
+          style={[
+            fieldStyles.input, 
+            Icon && { paddingLeft: 44 }, 
+            hasError && { borderColor: '#EF4444', paddingRight: 44 }
+          ]} 
+          placeholderTextColor="#C0CCDA" 
+          {...props} 
+        />
+        {hasError && (
+          <View style={fieldStyles.errorIconWrap}>
+            <Info size={17} color="#EF4444" />
+          </View>
+        )}
       </View>
-      {helper && <Text style={fieldStyles.helper}>{helper}</Text>}
+      {helper ? <Text style={[fieldStyles.helper, hasError && { color: '#EF4444' }]}>{helper}</Text> : null}
     </View>
   );
 };
@@ -43,6 +57,7 @@ const fieldStyles = StyleSheet.create({
   required: { color: '#5AA9E6' },
   inputRow: { position: 'relative', justifyContent: 'center' },
   iconWrap: { position: 'absolute', left: 14, zIndex: 1 },
+  errorIconWrap: { position: 'absolute', right: 14, zIndex: 1 },
   input: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
@@ -59,6 +74,16 @@ const fieldStyles = StyleSheet.create({
 const Signup = () => {
   const navigation = useNavigation();
   const [showPw, setShowPw] = useState(false);
+  const [idError, setIdError] = useState(false);
+  const [idErrorMsg, setIdErrorMsg] = useState('');
+  const [emailError, setEmailError] = useState(false);
+  const [emailErrorMsg, setEmailErrorMsg] = useState('');
+  const [modalConfig, setModalConfig] = useState({ visible: false, type: 'info', title: '', message: '', onConfirm: null });
+
+  const showModal = (type, title, message, onConfirm = null) => {
+    setModalConfig({ visible: true, type, title, message, onConfirm });
+  };
+  const hideModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
   const [formData, setFormData] = useState({
     loginId: '',
     nickname: '',
@@ -68,11 +93,22 @@ const Signup = () => {
     gender: 'M',
   });
 
-  const handleChange = (name, value) => setFormData({ ...formData, [name]: value });
+  const handleChange = (name, value) => {
+    const sanitized = value.replace(/\s/g, '');
+    setFormData({ ...formData, [name]: sanitized });
+    if (name === 'loginId') {
+      setIdError(false);
+      setIdErrorMsg('');
+    }
+    if (name === 'email') {
+      setEmailError(false);
+      setEmailErrorMsg('');
+    }
+  };
 
   const handleSignup = async () => {
     if (!formData.loginId || !formData.nickname || !formData.email || !formData.loginPw) {
-      Alert.alert('알림', '필수 항목(*)을 모두 입력해주세요.');
+      showModal('info', '알림', '필수 항목(*)을 모두 입력해주세요.');
       return;
     }
 
@@ -90,18 +126,43 @@ const Signup = () => {
       // ✅ 변경: 명세서의 성공 응답 형식 확인
       // 만약 백엔드에서 성공 시 code: "SUCCESS" 가 아니라 
       // 그냥 "요청 성공" 메시지만 준다면 조건을 result.message === "요청 성공" 등으로 바꿔야 할 수도 있습니다.
-      if (result.message === "요청 성공" || result.code === "SUCCESS") { 
-        Alert.alert(
-          '가입 완료',
-          `${formData.nickname}님, 가입을 환영합니다!`,
-          [{ text: '확인', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }) }]
-        );
+      if (result.message === "요청 성공" || result.code === "SUCCESS") {
+        showModal('success', '가입 완료', `${formData.nickname}님, 가입을 환영합니다!`, () => {
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        });
       } else {
-        Alert.alert('가입 실패', result.message || '정보를 다시 확인해주세요.');
+        const errorCode = result.code;
+        if (errorCode === 'U002') {
+          setIdError(true);
+          setIdErrorMsg('이미 존재하는 아이디입니다');
+        } else if (errorCode === 'U003') {
+          setEmailError(true);
+          setEmailErrorMsg('이미 존재하는 이메일입니다');
+        } else if (errorCode === 'G001') {
+          setEmailError(true);
+          setEmailErrorMsg('이메일 형식이 올바르지 않습니다');
+        }
+
       }
     } catch (error) {
-      console.error(error);
-      Alert.alert('에러', '회원가입 중 문제가 발생했습니다.');
+      console.error("Signup Error:", error.response?.data || error);
+      const errorData = error.response?.data;
+      if (errorData) {
+        const errorCode = errorData.code;
+        if (errorCode === 'U002') {
+          setIdError(true);
+          setIdErrorMsg('이미 존재하는 아이디입니다');
+          return;
+        } else if (errorCode === 'U003') {
+          setEmailError(true);
+          setEmailErrorMsg('이미 존재하는 이메일입니다');
+          return;
+        } else if (errorCode === 'G001') {
+          setEmailError(true);
+          setEmailErrorMsg('이메일 형식이 올바르지 않습니다');
+          return;
+        }
+      }
     }
   };
 
@@ -121,6 +182,32 @@ const Signup = () => {
         <View style={{ width: 36 }} />
       </View>
 
+      <Modal transparent animationType="fade" visible={modalConfig.visible} onRequestClose={hideModal}>
+        <Pressable style={modalStyles.backdrop} onPress={hideModal}>
+          <Pressable style={modalStyles.card} onPress={() => {}}>
+            <View style={[modalStyles.iconWrap, modalConfig.type === 'success' ? modalStyles.iconSuccess : modalConfig.type === 'error' ? modalStyles.iconError : modalStyles.iconInfo]}>
+              {modalConfig.type === 'success'
+                ? <CheckCircle size={32} color="#5AA9E6" />
+                : modalConfig.type === 'error'
+                ? <XCircle size={32} color="#EF4444" />
+                : <AlertCircle size={32} color="#F59E0B" />}
+            </View>
+            <Text style={modalStyles.title}>{modalConfig.title}</Text>
+            <Text style={modalStyles.message}>{modalConfig.message}</Text>
+            <TouchableOpacity
+              style={[modalStyles.btn, modalConfig.type === 'error' && modalStyles.btnError]}
+              activeOpacity={0.8}
+              onPress={() => {
+                hideModal();
+                modalConfig.onConfirm?.();
+              }}
+            >
+              <Text style={modalStyles.btnText}>확인</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
@@ -139,6 +226,8 @@ const Signup = () => {
               value={formData.loginId}
               onChangeText={(t) => handleChange('loginId', t)}
               autoCapitalize="none"
+              hasError={idError}
+              helper={idErrorMsg}
             />
 
             <InputField
@@ -159,6 +248,8 @@ const Signup = () => {
               autoCapitalize="none"
               value={formData.email}
               onChangeText={(t) => handleChange('email', t)}
+              hasError={emailError}
+              helper={emailErrorMsg}
             />
 
             {/* 비밀번호 (눈 아이콘 포함) */}
@@ -338,4 +429,59 @@ const styles = StyleSheet.create({
   loginLink: { alignItems: 'center', marginTop: 20, paddingVertical: 8 },
   loginLinkText: { fontSize: 14, color: '#94A3B8' },
   loginLinkBold: { color: '#5AA9E6', fontWeight: '800' },
+});
+
+const modalStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    width: '80%',
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingVertical: 32,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 20 },
+      android: { elevation: 10 },
+    }),
+  },
+  iconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  iconSuccess: { backgroundColor: '#EAF4FD' },
+  iconError:   { backgroundColor: '#FEF2F2' },
+  iconInfo:    { backgroundColor: '#FFFBEB' },
+  title: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  btn: {
+    width: '100%',
+    paddingVertical: 14,
+    backgroundColor: '#5AA9E6',
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  btnError: { backgroundColor: '#EF4444' },
+  btnText: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
 });

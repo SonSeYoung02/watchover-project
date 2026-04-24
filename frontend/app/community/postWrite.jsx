@@ -50,14 +50,8 @@ export default function PostWrite() {
       console.log("🚀 [데이터 전송 시작]", postData);
 
       const result = await createPost(postData, token);
-
-      // 📋 [Response] 성공 시 postId 유무 확인
-      if (result && result.postId) {
-        console.log("✅ 등록 성공! 생성된 ID:", result.postId);
-        Alert.alert("성공", "게시글이 등록되었습니다!", [
-          { text: "확인", onPress: () => navigation.goBack() },
-        ]);
-      }
+      console.log("✅ 글쓰기 응답:", JSON.stringify(result, null, 2));
+      navigation.goBack();
     } catch (error) {
       console.log("❌ 글쓰기 실패 상태 코드:", error.response?.status);
 

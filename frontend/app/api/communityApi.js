@@ -70,3 +70,20 @@ export const getPostDetail = async (postId, token) => {
     throw error;
   }
 };
+
+/**
+ * ✅ 5. 댓글 등록
+ */
+export const registerComment = async (postId, content, token) => {
+  try {
+    const response = await client.post(
+      `/api/community/post/${postId}/comment`,
+      { content },
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("댓글 등록 에러:", error);
+    throw error;
+  }
+};
