@@ -14,6 +14,9 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /*
+    1. 내가 만든 에러 반환
+     */
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ApiResponse<?>> handleCustomException(CustomException e) {
         return ResponseEntity
@@ -21,6 +24,9 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.fail(e.getErrorCode()));
     }
 
+    /*
+    2. dto @valid 에러 반환 핸들러
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<?>> handleValidationException(MethodArgumentNotValidException e) {
         Map<String, String> errors = e.getBindingResult().getFieldErrors().stream()
@@ -35,10 +41,12 @@ public class GlobalExceptionHandler {
                         .code(ErrorCode.INVALID_INPUT.getCode())
                         .message(ErrorCode.INVALID_INPUT.getMessage())
                         .data(errors)
-                        .error(ErrorCode.INVALID_INPUT.name())
                         .build());
     }
 
+    /*
+    3. 서버에서 난 에러 반환
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleException(Exception e) {
         return ResponseEntity

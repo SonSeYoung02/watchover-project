@@ -2,7 +2,6 @@ package com.chh.watchover.domain.user.service;
 
 import com.chh.watchover.domain.user.model.dto.*;
 import com.chh.watchover.global.security.JwtTokenProvider;
-import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
 import com.chh.watchover.global.exception.CustomException;
 import com.chh.watchover.global.exception.code.ErrorCode;
@@ -24,88 +23,81 @@ public class LoginService {
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
     }
-    /*
-    ============================================================================
-    1. 유저 생성
-    - if(아이디가 중복이면 오류 반환)
-    - if(이메일이 중복이면 오류 반환)
-    - 비밀번호 암호화하기
-    - UserEntity 생성하기 of(인자: RegisterRequestDto, encodedPassword)
-    - userRepository(DB)에 저장
-    - 회원가입 응답 DTO 생성
-    - 응답 포멧에 맞춰 반환
-    ============================================================================
+
+    /**
+     * 신규 유저를 등록합니다.
+     * loginId·email 중복 시 예외를 발생시키고, 비밀번호는 암호화하여 저장합니다.
+     *
+     * @param registerRequestDto 회원가입 요청 DTO
+     * @return 생성된 유저 정보 DTO
+     * @throws CustomException DUPLICATE_ID / DUPLICATE_EMAIL
      */
-    public ApiResponse<RegisterResponseDto> userRegister(RegisterRequestDto registerRequestDto) {
+    public RegisterResponseDto userRegister(RegisterRequestDto registerRequestDto) {
         if (userRepository.existsByLoginId(registerRequestDto.getLoginId())) { throw new CustomException(ErrorCode.DUPLICATE_ID); }
         if (userRepository.existsByEmail(registerRequestDto.getEmail())) { throw new CustomException(ErrorCode.DUPLICATE_EMAIL); }
         String encodedPassword = passwordEncoder.encode(registerRequestDto.getLoginPw());
         UserEntity user = UserEntity.of(registerRequestDto, encodedPassword);
         UserEntity saveUser = userRepository.save(user);
-        RegisterResponseDto registerResponseDto = RegisterResponseDto.from(saveUser);
-        return ApiResponse.success(registerResponseDto);
+        return RegisterResponseDto.from(saveUser);
     }
 
-    /*
-    ============================================================================
-    2. 유저 조회
-    - UserEntit를 찾아서 result에 저장
-    - result 변수에 사용자가 null일때 오류 반환
-    - SearchResponseDto 생성 from(인자: UserEntity)
-    - 표준 응답 포멧에 따라 반환
-    ============================================================================
+    /**
+     * userId(String)로 유저 정보를 조회합니다.
+     *
+     * @param userId 조회할 유저의 String 아이디
+     * @return 유저 정보 DTO
+     * @throws CustomException USER_NOT_FOUND
      */
-    public ApiResponse<SearchResponseDto> userSearch(Long userId) {
-        UserEntity user = userRepository.findById(userId)
+    public SearchResponseDto userSearch(String userId) {
+        UserEntity user = userRepository.findByLoginId(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        SearchResponseDto searchResponseDto = SearchResponseDto.from(user);
-        return ApiResponse.success(searchResponseDto);
+        return SearchResponseDto.from(user);
     }
 
-    /*
-    ============================================================================
-    3. 유저 로그인
-    - UserEntity가 null이 아닌지 확인 후 Optional을 열어 user에 저장
-        - UserEntity가 비어있는 경우 ErrorCode 반환
-    - 로그인과 비밀번호가 일치하는지 확인(비밀번호는 암호화 되어있기 때문에 SpringSecurity에게 맞는 비밀번호 인지 확인 받아야함)
-    - 인증이 완료되면 토큰 생성
-    - LoginResponseDto에 토큰을 넣고 생성
-    - 표준 응답 포멧에 따라 반환
-    ============================================================================
-    */
-    public ApiResponse<LoginResponseDto> userLogin(LoginRequestDto loginRequestDto) {
+    /**
+     * loginId·loginPw를 검증하고 JWT 토큰을 발급합니다.
+     *
+     * @param loginRequestDto 로그인 요청 DTO
+     * @return JWT 토큰을 담은 DTO
+     * @throws CustomException USER_NOT_FOUND / LOGIN_FAILED
+     */
+    public LoginResponseDto userLogin(LoginRequestDto loginRequestDto) {
         UserEntity user = userRepository.findByLoginId(loginRequestDto.getLoginId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         if (!user.getLoginId().equals(loginRequestDto.getLoginId()) || !passwordEncoder.matches(loginRequestDto.getLoginPw(), user.getLoginPw())) { throw new CustomException(ErrorCode.LOGIN_FAILED); }
         String token = jwtTokenProvider.createToken(user.getLoginId());
-        LoginResponseDto loginResponseDto = LoginResponseDto.from(token);
-        return ApiResponse.success(loginResponseDto);
+        return LoginResponseDto.from(token);
     }
 
-    /*
-    ============================================================================
-    4. 유저 삭제
-    ============================================================================
-    */
-    public ApiResponse<UserDeleteResponseDto> userDelete(String loginId) {
+    /**
+     * 현재 로그인된 유저의 계정을 삭제합니다.
+     *
+     * @param loginId 삭제할 유저의 loginId
+     * @return 삭제된 유저 정보 DTO
+     * @throws CustomException USER_NOT_FOUND
+     */
+    public UserDeleteResponseDto userDelete(String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         UserDeleteResponseDto userDeleteResponseDto = UserDeleteResponseDto.from(user);
         userRepository.delete(user);
-        return ApiResponse.success(userDeleteResponseDto);
+        return userDeleteResponseDto;
     }
 
-    /*
-    ============================================================================
-    5. 유저 정보 수정
-    ============================================================================
-    */
-    public ApiResponse<UserUpdateResponseDto> userUpdate(UserUpdateRequestDto dto, String loginId) {
+    /**
+     * 현재 로그인된 유저의 정보(비밀번호 등)를 수정합니다.
+     * 비밀번호는 암호화하여 저장합니다.
+     *
+     * @param dto     수정할 유저 정보 DTO
+     * @param loginId 수정 대상 유저의 loginId
+     * @return 수정된 유저 정보 DTO
+     * @throws CustomException USER_NOT_FOUND
+     */
+    public UserUpdateResponseDto userUpdate(UserUpdateRequestDto dto, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         String encodedPw = passwordEncoder.encode(dto.getLoginPw());
         UserEntity updateUser = user.userUpdate(dto, encodedPw);
-        UserUpdateResponseDto userUpdateResponseDto = UserUpdateResponseDto.from(updateUser);
-        return ApiResponse.success(userUpdateResponseDto);
+        return UserUpdateResponseDto.from(updateUser);
     }
 }
