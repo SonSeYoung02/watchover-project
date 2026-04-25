@@ -1,15 +1,9 @@
 import { useNavigation } from "@react-navigation/native";
 import {
-  Bell,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
-  Headphones,
   Heart,
-  HelpCircle,
-  Lock,
   LogOut,
-  Shield,
   Settings as SettingsIcon,
 } from "lucide-react-native";
 import {
@@ -35,12 +29,6 @@ const MyPage = () => {
     email: "",
   });
 
-  // ✅ [에러 해결!] missing settings state 추가
-  const [settings, setSettings] = useState({
-    chatbot: true,
-    community: false,
-  });
-
   useEffect(() => {
     const fetchMyData = async () => {
       try {
@@ -63,10 +51,6 @@ const MyPage = () => {
     fetchMyData();
   }, []);
 
-  const toggleSetting = (key) => {
-    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
   const handleLogout = () => {
     Alert.alert("로그아웃", "정말 로그아웃 하시겠습니까?", [
       { text: "취소", style: "cancel" },
@@ -81,23 +65,6 @@ const MyPage = () => {
       },
     ]);
   };
-
-  const ToggleSwitch = ({ isOn, onToggle }) => (
-    <TouchableOpacity
-      style={[styles.toggleSwitch, isOn ? styles.toggleOn : styles.toggleOff]}
-      onPress={onToggle}
-      activeOpacity={0.8}
-    >
-      <View
-        style={[styles.toggleHandle, isOn ? styles.handleOn : styles.handleOff]}
-      />
-      <Text
-        style={[styles.toggleLabel, isOn ? styles.labelOn : styles.labelOff]}
-      >
-        {isOn ? "ON" : "OFF"}
-      </Text>
-    </TouchableOpacity>
-  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -146,32 +113,6 @@ const MyPage = () => {
               </View>
               <ChevronRight size={18} color="#cccccc" />
             </TouchableOpacity>
-          </View>
-
-          <View style={styles.menuGroup}>
-            <Text style={styles.groupTitle}>알림 설정</Text>
-            <View style={styles.settingsContainer}>
-              <View style={styles.settingItem}>
-                <View style={styles.settingText}>
-                  <Text style={styles.itemLabel}>챗봇 알림</Text>
-                  <Text style={styles.itemSub}>실시간 대화 알림 받기</Text>
-                </View>
-                <ToggleSwitch
-                  isOn={settings.chatbot}
-                  onToggle={() => toggleSetting("chatbot")}
-                />
-              </View>
-              <View style={[styles.settingItem, { marginBottom: 0 }]}>
-                <View style={styles.settingText}>
-                  <Text style={styles.itemLabel}>커뮤니티 알림</Text>
-                  <Text style={styles.itemSub}>게시글 활동 소식 받기</Text>
-                </View>
-                <ToggleSwitch
-                  isOn={settings.community}
-                  onToggle={() => toggleSetting("community")}
-                />
-              </View>
-            </View>
           </View>
 
           <View style={[styles.menuGroup, { marginBottom: 60 }]}>
@@ -269,47 +210,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   menuText: { fontSize: 16, fontWeight: "700", color: "#333333" },
-  settingsContainer: {
-    backgroundColor: "#ffffff",
-    padding: 20,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
-  },
-  settingItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  settingText: { flex: 1, marginRight: 16 },
-  itemLabel: { fontSize: 16, fontWeight: "700", color: "#333333" },
-  itemSub: { fontSize: 13, color: "#999999", marginTop: 4 },
-  toggleSwitch: {
-    width: 52,
-    height: 26,
-    borderRadius: 13,
-    paddingHorizontal: 4,
-    justifyContent: "center",
-  },
-  toggleOn: { backgroundColor: "#5AA9E6" },
-  toggleOff: { backgroundColor: "#E5E5EA" },
-  toggleHandle: {
-    width: 20,
-    height: 20,
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-  },
-  handleOn: { alignSelf: "flex-end" },
-  handleOff: { alignSelf: "flex-start" },
-  toggleLabel: {
-    fontSize: 8,
-    fontWeight: "900",
-    color: "#ffffff",
-    position: "absolute",
-  },
-  labelOn: { left: 8 },
-  labelOff: { right: 8, color: "#aaaaaa" },
   footerActionItem: {
     paddingVertical: 12,
     paddingHorizontal: 4,
