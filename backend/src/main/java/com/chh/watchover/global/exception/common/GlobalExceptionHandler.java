@@ -47,7 +47,6 @@ public class GlobalExceptionHandler {
                         .code(ErrorCode.INVALID_INPUT.getCode())
                         .message(ErrorCode.INVALID_INPUT.getMessage())
                         .data(errors)
-                        .error(ErrorCode.INVALID_INPUT.name())
                         .build());
     }
 

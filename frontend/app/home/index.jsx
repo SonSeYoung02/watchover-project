@@ -13,9 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Swiper from 'react-native-swiper';
 import { getBannerList } from '../api/bannerApi';
+import { getUserSearch } from '../api/userApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Navigation from '../../components/Navigation';
-import { useEffect, useState, useCallback } from 'react'; // useEffect 추가
+import { useEffect, useState, useCallback } from 'react';
 
 const { width } = Dimensions.get('window');
 
@@ -42,36 +44,49 @@ const SectionHeader = ({ title }) => (
 
 const MainHome = () => {
   const navigation = useNavigation();
-  const userName = 'TestUser'; 
-
-  // 1. 가짜 데이터 대신 빈 배열로 시작
+  const [userName, setUserName] = useState('');
   const [quotes, setQuotes] = useState([]);
 
-  // 2. 서버에서 명언 가져오는 함수 (명세서: GET /api/banners/{banner_id})
-  // 명세서에 배너 리스트 조회가 있다면 그걸 쓰고, 없다면 개별 호출을 반복하거나 
-  // "배너 전체 리스트 API"가 필요 
-  // 일단 하나만 가져오는 구조로 만듬
   useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const userId = await AsyncStorage.getItem('userId');
+        console.log('🔍 저장된 token:', token);
+        console.log('🔍 저장된 userId:', userId);
+        if (!token || !userId) {
+          console.warn('⚠️ token 또는 userId가 없습니다. 로그인 응답 필드명을 확인하세요.');
+          return;
+        }
+
+        const result = await getUserSearch(userId, token);
+        console.log('👤 유저 정보 응답:', JSON.stringify(result, null, 2));
+        if (result && result.code === 'SUCCESS' && result.data) {
+          setUserName(result.data.nickname || result.data.name || '');
+        }
+      } catch (error) {
+        console.error('유저 정보 로드 실패:', error);
+      }
+    };
+
     const fetchQuotes = async () => {
       try {
-        const result = await getBannerList(); // API 호출
-        
+        const result = await getBannerList();
         if (result && result.code === "SUCCESS" && result.data) {
-          // 서버에서 받은 데이터 배열을 Swiper에 필요한 형식으로 매핑
           const formattedQuotes = result.data.map((item, index) => ({
-            id: item.id || index, // 서버에서 id를 주면 쓰고 아니면 index 사용
+            id: item.id || index,
             text: item.message || '소중한 하루 보내세요.',
             author: item.author || 'Care AI',
-            // 디자인 포인트: 배경색을 두 가지 정도로 번갈아가며 적용
-            accent: index % 2 === 0 ? '#5AA9E6' : '#7BBCEB', 
+            accent: index % 2 === 0 ? '#5AA9E6' : '#7BBCEB',
           }));
-          
           setQuotes(formattedQuotes);
         }
       } catch (error) {
         console.error('명언 목록 로드 실패:', error);
       }
     };
+
+    fetchUserInfo();
     fetchQuotes();
   }, []);
 

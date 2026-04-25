@@ -11,7 +11,6 @@ import com.chh.watchover.domain.community.repository.LikeRepository;
 import com.chh.watchover.domain.community.repository.PostRepository;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
 import com.chh.watchover.domain.user.repository.UserRepository;
-import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.global.exception.CustomException;
 import com.chh.watchover.global.exception.code.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -47,35 +47,36 @@ public class CommunityService {
     }
 
     /**
-     * 새 게시물을 작성하고 저장합니다.
+     * 새 게시물을 작성합니다.
+     * loginId로 유저를 조회한 뒤 게시물을 저장하고, 작성된 게시물 정보를 반환합니다.
      *
-     * @param dto     게시물 작성 요청 정보 (제목, 내용 등)
-     * @param loginId 게시물을 작성하는 사용자의 로그인 아이디
-     * @return 작성된 게시물 정보를 담은 표준 응답
-     * @throws CustomException 해당 로그인 아이디의 사용자가 존재하지 않는 경우
+     * @param dto     게시물 작성 요청 DTO (title, content 등)
+     * @param loginId 작성자의 loginId
+     * @return 생성된 게시물 정보 DTO
+     * @throws CustomException USER_NOT_FOUND
      */
     @Transactional
-    public ApiResponse<PostWriteResponseDto> postWrite(PostWriteRequestDto dto, String loginId) {
+    public PostWriteResponseDto postWrite(PostWriteRequestDto dto, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         PostEntity post = PostEntity.of(dto, user);
         PostEntity savePost = postRepository.save(post);
         String nickname = user.getNickname();
-        PostWriteResponseDto postWriteResponseDto = PostWriteResponseDto.from(savePost, nickname);
-        return ApiResponse.success(postWriteResponseDto);
+        return PostWriteResponseDto.from(savePost, nickname);
     }
 
     /**
-     * 기존 게시물의 제목과 내용을 수정합니다. 작성자 본인만 수정할 수 있습니다.
+     * 기존 게시물을 수정합니다.
+     * 게시물 작성자 본인만 제목·내용을 수정할 수 있습니다.
      *
-     * @param dto     게시물 수정 요청 정보 (제목, 내용)
-     * @param loginId 수정을 요청하는 사용자의 로그인 아이디
-     * @param postId  수정할 게시물의 고유 ID
-     * @return 수정된 게시물 정보를 담은 표준 응답
-     * @throws CustomException 사용자 또는 게시물이 존재하지 않거나 작성자가 아닌 경우
+     * @param dto     게시물 수정 요청 DTO (title, content)
+     * @param loginId 수정 요청자의 loginId
+     * @param postId  수정할 게시물 PK
+     * @return 수정된 게시물 정보 DTO
+     * @throws CustomException USER_NOT_FOUND / POST_NOT_FOUND / FORBIDDEN_ACCESS
      */
     @Transactional
-    public ApiResponse<PostUpdateResponseDto> postUpdate(PostUpdateRequestDto dto,String loginId, Long postId) {
+    public PostUpdateResponseDto postUpdate(PostUpdateRequestDto dto, String loginId, Long postId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         PostEntity post = postRepository.findById(postId)
@@ -83,47 +84,61 @@ public class CommunityService {
         if (!post.getUser().getLoginId().equals(loginId)) {throw (new CustomException(ErrorCode.FORBIDDEN_ACCESS));}
         post.updatePost(dto.title(), dto.content());
         String nickname = user.getNickname();
-        PostUpdateResponseDto postUpdateResponseDto = PostUpdateResponseDto.of(post, nickname);
-        return ApiResponse.success(postUpdateResponseDto);
+        return PostUpdateResponseDto.of(post, nickname);
     }
 
     /**
-     * 게시물 ID에 해당하는 게시물을 삭제합니다.
+     * 게시물을 삭제합니다.
      *
-     * @param postId 삭제할 게시물의 고유 ID
-     * @return 데이터 없이 성공만을 나타내는 표준 응답
-     * @throws CustomException 해당 ID의 게시물이 존재하지 않는 경우
+     * @param postId 삭제할 게시물 PK
+     * @throws CustomException POST_NOT_FOUND
      */
     @Transactional
-    public ApiResponse<Void> postDelete(Long postId) {
+    public void postDelete(Long postId) {
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         postRepository.delete(post);
-        return ApiResponse.success(null);
     }
 
     /**
-     * 전체 게시물을 페이징하여 조회합니다.
+     * 게시물 상세 정보와 해당 게시물의 댓글 목록을 조회합니다.
      *
-     * @param pageable 페이지 번호, 크기, 정렬 기준을 담은 페이징 정보
-     * @return 페이징된 게시물 목록을 담은 표준 응답
+     * @param postId 조회할 게시물 PK
+     * @return 게시물 상세 정보 및 댓글 목록 DTO
+     * @throws CustomException POST_NOT_FOUND
      */
-    public ApiResponse<ListPostPageResponseDto> listPost(Pageable pageable) {
-        Page<PostEntity> postPage = postRepository.findAll(pageable);
-        ListPostPageResponseDto pageDto = ListPostPageResponseDto.from(postPage);
-        return ApiResponse.success(pageDto);
+    public PostDetailResponseDto getPostDetail(Long postId) {
+        PostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        List<ListCommentResponseDto> comments = commentRepository.findByPost_PostIdOrderByCreatedAtAsc(postId)
+                .stream()
+                .map(ListCommentResponseDto::from)
+                .toList();
+        return PostDetailResponseDto.of(post, comments);
     }
 
     /**
-     * 게시물에 좋아요를 토글합니다. 이미 좋아요가 되어 있으면 취소하고, 없으면 추가합니다.
+     * 전체 게시물을 최신순으로 페이징하여 조회합니다.
      *
-     * @param postId  좋아요를 토글할 게시물의 고유 ID
-     * @param loginId 요청하는 사용자의 로그인 아이디
-     * @return 좋아요 처리 결과(게시물 ID, 현재 좋아요 상태)를 담은 표준 응답
-     * @throws CustomException 사용자 또는 게시물이 존재하지 않는 경우
+     * @param pageable 페이지 정보 (page, size, sort)
+     * @return 페이징된 게시물 목록 DTO
+     */
+    public ListPostPageResponseDto listPost(Pageable pageable) {
+        Page<PostEntity> postPage = postRepository.findAll(pageable);
+        return ListPostPageResponseDto.from(postPage);
+    }
+
+    /**
+     * 게시물 좋아요를 토글합니다.
+     * 이미 좋아요가 있으면 취소(likeCount--), 없으면 추가(likeCount++)합니다.
+     *
+     * @param postId  좋아요를 누를 게시물 PK
+     * @param loginId 요청 유저의 loginId
+     * @return 좋아요 상태(isLike)와 게시물 ID를 담은 DTO
+     * @throws CustomException USER_NOT_FOUND / POST_NOT_FOUND
      */
     @Transactional
-    public ApiResponse<LikePostResponseDto> likePost(Long postId, String loginId) {
+    public LikePostResponseDto likePost(Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         PostEntity post = postRepository.findById(postId)
@@ -140,55 +155,54 @@ public class CommunityService {
             post.addLike();
             isLike = true;
         }
-        LikePostResponseDto dto = LikePostResponseDto.of(post.getPostId(), isLike);
-        return ApiResponse.success(dto);
+        return LikePostResponseDto.of(post.getPostId(), isLike);
     }
 
     /**
-     * 게시물을 인기순으로 페이징하여 조회합니다.
+     * 게시물을 좋아요 수 내림차순으로 페이징하여 조회합니다.
+     * 좋아요 수가 같으면 최신순으로 정렬됩니다.
      *
-     * @param pageable 페이지 번호, 크기, 정렬 기준을 담은 페이징 정보
-     * @return 페이징된 게시물 목록을 담은 표준 응답
+     * @param pageable 페이지 정보 (page, size, sort)
+     * @return 페이징된 인기 게시물 목록 DTO
      */
-    public ApiResponse<ListPostPageResponseDto> popularPost(Pageable pageable) {
+    public ListPostPageResponseDto popularPost(Pageable pageable) {
         Page<PostEntity> postPage = postRepository.findAll(pageable);
-        ListPostPageResponseDto pageDto = ListPostPageResponseDto.from(postPage);
-        return ApiResponse.success(pageDto);
+        return ListPostPageResponseDto.from(postPage);
     }
 
     /**
-     * 특정 게시물에 댓글을 작성하고 저장합니다.
+     * 게시물에 댓글을 작성합니다.
      *
-     * @param dto     댓글 작성 요청 정보 (댓글 내용 등)
-     * @param postId  댓글을 작성할 게시물의 고유 ID
-     * @param loginId 댓글을 작성하는 사용자의 로그인 아이디
-     * @return 작성된 댓글 정보를 담은 표준 응답
-     * @throws CustomException 사용자 또는 게시물이 존재하지 않는 경우
+     * @param dto     댓글 작성 요청 DTO (content)
+     * @param postId  댓글을 달 게시물 PK
+     * @param loginId 작성자의 loginId
+     * @return 생성된 댓글 정보 DTO
+     * @throws CustomException USER_NOT_FOUND / POST_NOT_FOUND
      */
     @Transactional
-    public ApiResponse<CommentWriteResponseDto> commentWrite(CommentWriteRequestDto dto, Long postId, String loginId) {
+    public CommentWriteResponseDto commentWrite(CommentWriteRequestDto dto, Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         CommentEntity comment = CommentEntity.of(dto, user, post);
         CommentEntity saveComment = commentRepository.save(comment);
-        CommentWriteResponseDto commentWriteResponseDto = CommentWriteResponseDto.of(saveComment, post, user);
-        return ApiResponse.success(commentWriteResponseDto);
+        return CommentWriteResponseDto.of(saveComment, post, user);
     }
 
     /**
-     * 특정 게시물의 댓글을 수정합니다. 댓글 작성자 본인만 수정할 수 있습니다.
+     * 기존 댓글을 수정합니다.
+     * 댓글 작성자 본인만 수정할 수 있으며, 해당 게시물의 댓글인지 검증합니다.
      *
-     * @param dto       댓글 수정 요청 정보 (수정할 내용)
-     * @param postId    댓글이 속한 게시물의 고유 ID
-     * @param commentId 수정할 댓글의 고유 ID
-     * @param loginId   수정을 요청하는 사용자의 로그인 아이디
-     * @return 수정된 댓글 정보를 담은 표준 응답
-     * @throws CustomException 사용자·게시물·댓글이 존재하지 않거나, 작성자가 아니거나, 댓글이 해당 게시물에 속하지 않는 경우
+     * @param dto       댓글 수정 요청 DTO (content)
+     * @param postId    댓글이 속한 게시물 PK
+     * @param commentId 수정할 댓글 PK
+     * @param loginId   수정 요청자의 loginId
+     * @return 수정된 댓글 정보 DTO
+     * @throws CustomException USER_NOT_FOUND / POST_NOT_FOUND / COMMENT_NOT_FOUND / UNAUTHORIZED_USER / COMMENT_NOT_IN_POST
      */
     @Transactional
-    public ApiResponse<CommentEditResponseDto> commentEdit(CommentEditRequestDto dto, Long postId, Long commentId, String loginId) {
+    public CommentEditResponseDto commentEdit(CommentEditRequestDto dto, Long postId, Long commentId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         PostEntity post = postRepository.findById(postId)
@@ -203,32 +217,31 @@ public class CommunityService {
             throw new CustomException(ErrorCode.COMMENT_NOT_IN_POST);
         }
         comment.updateComment(dto);
-        CommentEditResponseDto commentEditResponseDto = CommentEditResponseDto.of(comment, user, post);
-        return ApiResponse.success(commentEditResponseDto);
+        return CommentEditResponseDto.of(comment, user, post);
     }
 
     /**
-     * 전체 댓글을 페이징하여 조회합니다.
+     * 전체 댓글을 최신순으로 페이징하여 조회합니다.
      *
-     * @param pageable 페이지 번호, 크기, 정렬 기준을 담은 페이징 정보
-     * @return 페이징된 댓글 목록을 담은 표준 응답
+     * @param pageable 페이지 정보 (page, size, sort)
+     * @return 페이징된 댓글 목록 DTO
      */
-    public ApiResponse<ListCommentPageResponseDto> listComment(Pageable pageable) {
+    public ListCommentPageResponseDto listComment(Pageable pageable) {
         Page<CommentEntity> commentPage = commentRepository.findAll(pageable);
-        ListCommentPageResponseDto pageDto = ListCommentPageResponseDto.from(commentPage);
-        return ApiResponse.success(pageDto);
+        return ListCommentPageResponseDto.from(commentPage);
     }
 
     /**
-     * 게시물에 북마크를 토글합니다. 이미 북마크가 되어 있으면 취소하고, 없으면 추가합니다.
+     * 게시물 북마크를 토글합니다.
+     * 이미 북마크가 있으면 취소, 없으면 추가합니다.
      *
-     * @param postId  북마크를 토글할 게시물의 고유 ID
-     * @param loginId 요청하는 사용자의 로그인 아이디
-     * @return 북마크 처리 결과(게시물 ID, 현재 북마크 상태)를 담은 표준 응답
-     * @throws CustomException 사용자 또는 게시물이 존재하지 않는 경우
+     * @param postId  북마크할 게시물 PK
+     * @param loginId 요청 유저의 loginId
+     * @return 북마크 상태(isBookmark)와 게시물 ID를 담은 DTO
+     * @throws CustomException USER_NOT_FOUND / POST_NOT_FOUND
      */
     @Transactional
-    public ApiResponse<BookmarkResponseDto> bookmark(Long postId, String loginId) {
+    public BookmarkResponseDto bookmark(Long postId, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         PostEntity post = postRepository.findById(postId)
@@ -243,8 +256,7 @@ public class CommunityService {
             bookmarkRepository.save(newBookmark);
             isBookmark = true;
         }
-        BookmarkResponseDto dto = BookmarkResponseDto.from(postId, isBookmark);
-        return ApiResponse.success(dto);
+        return BookmarkResponseDto.from(postId, isBookmark);
     }
 
 }

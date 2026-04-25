@@ -59,8 +59,7 @@ export default function CommunityScreen() {
           result = await getPostList(token);
         }
 
-        // ✅ 명세서 주머니 이름 'listPost'로 통일 (혹은 result 자체일 경우 대비)
-        const data = result?.listPost || result?.postResponseDtoList || [];
+        const data = result?.data?.listPost || result?.listPost || [];
         setPosts(data);
       } catch (error) {
         console.error(`${tabName} 로드 실패:`, error);
@@ -95,7 +94,7 @@ export default function CommunityScreen() {
       activeOpacity={0.7}
     >
       <View style={styles.postHeaderRow}>
-        <Text style={styles.postAuthor}>{item.author || "익명"}</Text>
+        <Text style={styles.postAuthor}>{item.nickname || item.author || "익명"}</Text>
         <Text style={styles.postDate}>
           {item.createdAt ? item.createdAt.split("T")[0] : ""}
         </Text>

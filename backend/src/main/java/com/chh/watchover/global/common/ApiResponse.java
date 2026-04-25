@@ -7,13 +7,12 @@ import lombok.Getter;
 
 @Builder
 @Getter
-@JsonPropertyOrder({"code", "message", "data", "error"})
+@JsonPropertyOrder({"code", "message", "data"})
 public class ApiResponse<T> {
 
     private String code;
     private String message;
     private T data;
-    private String error;
 
     /**
      * 요청 성공 시 데이터를 포함한 ApiResponse를 생성합니다.
@@ -27,7 +26,6 @@ public class ApiResponse<T> {
                 .code("SUCCESS")
                 .message("요청 성공")
                 .data(data)
-                .error(null)
                 .build();
     }
 
@@ -43,7 +41,6 @@ public class ApiResponse<T> {
                 .code(errorCode.getCode())
                 .message(errorCode.getMessage())
                 .data(null)
-                .error(errorCode.name())
                 .build();
     }
 
@@ -59,7 +56,6 @@ public class ApiResponse<T> {
                 .code(ErrorCode.INTERNAL_SERVER_ERROR.getCode())
                 .message(message)
                 .data(null)
-                .error(ErrorCode.INTERNAL_SERVER_ERROR.name())
                 .build();
     }
 }

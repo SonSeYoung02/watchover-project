@@ -15,29 +15,30 @@ import {
   Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// ✅ 변경: 직접 client 대신 communityApi 함수들 임포트
-import { getPostDetail, registerComment } from '../../api/communityApi'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getPostDetail, registerComment } from '../../api/communityApi';
 
 export default function PostDetail() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { id } = route.params || {}; 
+  const { id } = route.params || {};
 
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ 1. 게시글 상세 조회 로직 수정
   useEffect(() => {
     const fetchPostDetail = async () => {
       try {
         setIsLoading(true);
-        const result = await getPostDetail(id); // API 함수 호출
-        
+        const token = await AsyncStorage.getItem('userToken');
+        console.log('📄 상세 요청 postId:', id, '/ 타입:', typeof id);
+        const result = await getPostDetail(id, token);
+        console.log('📄 게시글 상세 응답:', JSON.stringify(result, null, 2));
         if (result && result.code === "SUCCESS" && result.data) {
           setPost(result.data);
-          setComments(result.data.comments || []);
+          setComments(result.data.comments || result.data.commentList || []);
         }
       } catch (error) {
         console.error('상세보기 로드 실패:', error);
@@ -50,21 +51,14 @@ export default function PostDetail() {
     if (id) fetchPostDetail();
   }, [id]);
 
-  // ✅ 2. 댓글 등록 함수 수정
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) return;
-
     try {
-      const result = await registerComment({
-        postId: id,
-        content: commentText,
-        author: 'TestUser' // 나중에 로그인한 사용자 닉네임으로 교체
-      });
-
+      const token = await AsyncStorage.getItem('userToken');
+      const result = await registerComment(id, commentText, token);
       if (result && result.code === "SUCCESS") {
-        // 서버에서 생성된 새 댓글 객체를 즉시 리스트에 반영
-        setComments([...comments, result.data]); 
-        setCommentText(''); 
+        setComments([...comments, result.data]);
+        setCommentText('');
       }
     } catch (error) {
       Alert.alert('실패', '댓글 등록 중 오류가 발생했습니다.');
@@ -98,13 +92,13 @@ export default function PostDetail() {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView 
-        style={styles.keyboardView} 
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          
+
           {/* Post Content Area */}
           <View style={styles.postHeader}>
             <View style={styles.authorInfo}>
@@ -112,8 +106,8 @@ export default function PostDetail() {
                 <User color="#ffffff" size={20} />
               </View>
               <View>
-                <Text style={styles.authorName}>{post.author}</Text>
-                <Text style={styles.postDate}>{post.createdAt}</Text>
+                <Text style={styles.authorName}>{post.nickname || post.author || '익명'}</Text>
+                <Text style={styles.postDate}>{post.createdAt ? post.createdAt.split('T')[0] : ''}</Text>
               </View>
             </View>
           </View>
@@ -130,7 +124,7 @@ export default function PostDetail() {
             </View>
             <View style={styles.actionBtn}>
               <Heart color="#FF5A5F" size={22} />
-              <Text style={[styles.actionText, { color: '#FF5A5F' }]}>{post.likes || 0}</Text>
+              <Text style={[styles.actionText, { color: '#FF5A5F' }]}>{post.likeCount || 0}</Text>
             </View>
           </View>
 

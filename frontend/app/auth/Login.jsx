@@ -1,7 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 import {
-  Alert,
   Keyboard,
   Platform,
   ScrollView,
@@ -12,8 +11,10 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Eye, EyeOff, Info } from "lucide-react-native";
 import { login } from "../api/authApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -21,39 +22,46 @@ const Login = () => {
   const navigation = useNavigation();
   const [loginId, setLoginId] = useState("");
   const [loginPw, setLoginPw] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState(false);
+  const [loginErrorMsg, setLoginErrorMsg] = useState("");
+
+  const clearError = () => {
+    setLoginError(false);
+    setLoginErrorMsg("");
+  };
 
   const handleLogin = async () => {
-    if (loginId && loginPw) {
-      try {
-        const result = await login({ loginId, loginPw });
+    if (!loginId || !loginPw) {
+      setLoginError(true);
+      setLoginErrorMsg("아이디와 비밀번호를 입력해주세요.");
+      return;
+    }
 
-        console.log(
-          "📡 서버 응답 전체 데이터:",
-          JSON.stringify(result, null, 2),
-        );
+    setIsLoading(true);
+    try {
+      const result = await login({ loginId, loginPw });
 
-        if (result.code === "SUCCESS" || result.message === "요청 성공") {
-          // ✅ [추가] 서버가 보내준 토큰을 저장합니다.
-          // 백엔드 명세서에 따라 result.data.accessToken 인지 확인이 필요합니다.
-          if (result.data && result.data.token) {
-            await AsyncStorage.setItem("userToken", result.data.token);
-            console.log("🔑 토큰 저장 완료:", result.data.token);
-          }
+      console.log("📡 서버 응답 전체 데이터:", JSON.stringify(result, null, 2));
 
-          Alert.alert("성공", "로그인 되었습니다.");
-          navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-        } else {
-          Alert.alert(
-            "로그인 실패",
-            result.message || "아이디나 비밀번호를 확인해주세요.",
-          );
+      if (result.code === "SUCCESS" || result.message === "요청 성공") {
+        console.log("🔑 result.data 전체:", JSON.stringify(result.data, null, 2));
+        if (result.data && result.data.token) {
+          await AsyncStorage.setItem("userToken", result.data.token);
         }
-      } catch (error) {
-        console.error(error);
-        Alert.alert("에러", "서버 연결에 실패했습니다.");
+        await AsyncStorage.setItem("userId", loginId);
+        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      } else {
+        setLoginError(true);
+        setLoginErrorMsg("아이디 또는 비밀번호가 올바르지 않습니다.");
       }
-    } else {
-      Alert.alert("알림", "아이디와 비밀번호를 입력해주세요.");
+    } catch (error) {
+      console.error(error);
+      setLoginError(true);
+      setLoginErrorMsg("아이디 또는 비밀번호가 올바르지 않습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -72,32 +80,58 @@ const Login = () => {
           <View style={styles.loginForm}>
             <View style={styles.inputGroup}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, loginError && styles.inputError]}
                 placeholder="아이디"
                 placeholderTextColor="#999"
                 value={loginId}
-                onChangeText={setLoginId}
+                onChangeText={(t) => { setLoginId(t.replace(/\s/g, '')); clearError(); }}
                 autoCapitalize="none"
               />
+              {loginError && (
+                <View style={styles.errorIconRight}>
+                  <Info size={18} color="#EF4444" />
+                </View>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { paddingRight: 50 }, loginError && styles.inputError]}
                 placeholder="비밀번호"
                 placeholderTextColor="#999"
                 value={loginPw}
-                onChangeText={setLoginPw}
-                secureTextEntry={true}
+                onChangeText={(t) => { setLoginPw(t.replace(/\s/g, '')); clearError(); }}
+                secureTextEntry={!showPassword}
               />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPressIn={() => setShowPassword(true)}
+                onPressOut={() => setShowPassword(false)}
+                activeOpacity={1}
+              >
+                {showPassword ? (
+                  <Eye size={20} color="#5AA9E6" />
+                ) : (
+                  <EyeOff size={20} color="#999" />
+                )}
+              </TouchableOpacity>
             </View>
 
+            {loginError && (
+              <Text style={styles.errorMsg}>{loginErrorMsg}</Text>
+            )}
+
             <TouchableOpacity
-              style={styles.loginBtn}
+              style={[styles.loginBtn, isLoading ? styles.loginBtnDisabled : null]}
               onPress={handleLogin}
               activeOpacity={0.8}
+              disabled={isLoading}
             >
-              <Text style={styles.loginBtnText}>로그인</Text>
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.loginBtnText}>로그인</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -144,6 +178,19 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 15,
     width: "100%",
+    justifyContent: "center",
+  },
+  eyeIcon: {
+    position: "absolute",
+    right: 16,
+    height: "100%",
+    justifyContent: "center",
+  },
+  errorIconRight: {
+    position: "absolute",
+    right: 16,
+    height: "100%",
+    justifyContent: "center",
   },
   input: {
     width: "100%",
@@ -154,6 +201,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#F8F9FA",
     color: "#000",
+  },
+  inputError: {
+    borderColor: "#EF4444",
+    borderWidth: 1.5,
+  },
+  errorMsg: {
+    color: "#EF4444",
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 10,
+    paddingLeft: 4,
   },
   loginBtn: {
     width: "100%",
@@ -171,6 +229,9 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 6 },
     }),
+  },
+  loginBtnDisabled: {
+    backgroundColor: "#A0C8E8",
   },
   loginBtnText: {
     color: "white",

@@ -2,6 +2,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import Splash from "./Splash";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
 import Home from "./home/index";
@@ -29,12 +30,13 @@ export default function AppNavigator() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="Login"
+          initialRouteName="Splash"
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: "#F9F9F9" },
           }}
         >
+          <Stack.Screen name="Splash" component={Splash} />
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Signup" component={Signup} />
           <Stack.Screen name="Home" component={Home} />

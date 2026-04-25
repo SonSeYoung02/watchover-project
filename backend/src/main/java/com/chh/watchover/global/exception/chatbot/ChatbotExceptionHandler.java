@@ -38,7 +38,6 @@ public class ChatbotExceptionHandler {
                         .code(ErrorCode.OPENAI_API_ERROR.getCode())
                         .message(e.getMessage())
                         .data(null)
-                        .error(ErrorCode.OPENAI_API_ERROR.name())
                         .build());
     }
 }

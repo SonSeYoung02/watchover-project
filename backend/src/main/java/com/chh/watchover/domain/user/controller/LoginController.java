@@ -23,97 +23,71 @@ public class LoginController {
         this.loginService = loginService;
     }
 
-    /*
-    =====================================================================
-    1. 유저 생성
-    - 유저를 생성하는 메소드
-    =====================================================================
-    */
-
     /**
-     * 새로운 회원을 등록한다.
+     * 회원가입 API.
+     * 아이디·이메일 중복 검사 후 신규 유저를 생성합니다.
      *
-     * @param userRegisterRequestDto 회원가입에 필요한 사용자 정보 DTO
-     * @return 등록된 회원 정보를 담은 ApiResponse
+     * @param userRegisterRequestDto 회원가입 요청 DTO (loginId, loginPw, email 등)
+     * @return 생성된 유저 정보를 담은 표준 응답
      */
     @Operation(summary = "회원가입")
     @PostMapping("/register")
     public ApiResponse<RegisterResponseDto> userId(@Valid @RequestBody RegisterRequestDto userRegisterRequestDto) {
-        return loginService.userRegister(userRegisterRequestDto);
+        return ApiResponse.success(loginService.userRegister(userRegisterRequestDto));
     }
 
-    /*
-    =====================================================================
-    2. 유저 조회
-    - 유저를 userId를 통해서 찾는 메소드
-    =====================================================================
-    */
     /**
-     * userId를 기반으로 특정 회원 정보를 조회한다.
+     * 보인 정보 조회 API.
+     * 로그인한 유저의 정보를 조회합니다.
      *
-     * @param userId 조회할 회원의 고유 식별자
-     * @return 조회된 회원 정보를 담은 ApiResponse
+     * @return 유저 정보를 담은 표준 응답
      */
+    @GetMapping("/search/me")
+    public ApiResponse<SearchResponseDto> userSearch(Principal principal) {
+        String loginId = principal.getName();
+        return ApiResponse.success(loginService.userSearch(loginId));
     @Operation(summary = "유저 조회")
-    @GetMapping("/search/{userId}")
-    public ApiResponse<SearchResponseDto> userSearch(@PathVariable Long userId) {
-        return loginService.userSearch(userId);
     }
 
-    /*
-    =====================================================================
-    3. 유저 로그인
-    - 유저의 정보를 확인하는 메소드
-    =====================================================================
-    */
     /**
-     * 사용자 자격증명을 검증하고 로그인 처리한다.
+     * 로그인 API.
+     * loginId·loginPw 검증 후 JWT 토큰을 발급합니다.
      *
-     * @param loginRequestDto 로그인에 필요한 아이디 및 비밀번호 DTO
-     * @return 로그인 결과(토큰 등)를 담은 ApiResponse
+     * @param loginRequestDto 로그인 요청 DTO (loginId, loginPw)
+     * @return 발급된 JWT 토큰을 담은 표준 응답
      */
     @Operation(summary = "로그인")
     @PostMapping("/login")
     public ApiResponse<LoginResponseDto> userLogin(@Valid @RequestBody LoginRequestDto loginRequestDto) {
-        return loginService.userLogin(loginRequestDto);
+        return ApiResponse.success(loginService.userLogin(loginRequestDto));
     }
 
-    /*
-    =====================================================================
-    4. 유저 삭제
-    - 유저의 계정을 삭제하는 기능
-    =====================================================================
-    */
     /**
-     * 현재 로그인된 회원의 계정을 삭제한다.
+     * 회원 탈퇴 API.
+     * 현재 로그인된 유저의 계정을 삭제합니다.
      *
-     * @param principal 현재 인증된 사용자 정보 (Spring Security 제공)
-     * @return 탈퇴 처리 결과를 담은 ApiResponse
+     * @param principal Spring Security가 주입하는 현재 인증 유저 정보
+     * @return 삭제된 유저 정보를 담은 표준 응답
      */
     @Operation(summary = "회원 탈퇴")
     @DeleteMapping("/delete")
     public ApiResponse<UserDeleteResponseDto> userDelete(Principal principal) {
         String loginId = principal.getName();
-        return loginService.userDelete(loginId);
+        return ApiResponse.success(loginService.userDelete(loginId));
     }
 
-    /*
-    =====================================================================
-    5. 유저 정보 수정
-    - 유저의 정보를 수정하는 기능
-    =====================================================================
-    */
     /**
-     * 현재 로그인된 회원의 정보를 수정한다.
+     * 유저 정보 수정 API.
+     * 현재 로그인된 유저의 비밀번호 등 정보를 수정합니다.
      *
-     * @param dto       수정할 회원 정보 DTO
-     * @param principal 현재 인증된 사용자 정보 (Spring Security 제공)
-     * @return 수정된 회원 정보를 담은 ApiResponse
+     * @param dto       수정할 유저 정보 DTO
+     * @param principal Spring Security가 주입하는 현재 인증 유저 정보
+     * @return 수정된 유저 정보를 담은 표준 응답
      */
     @Operation(summary = "회원 정보 수정")
     @PatchMapping("/update")
     public ApiResponse<UserUpdateResponseDto> userUpdate(@RequestBody UserUpdateRequestDto dto, Principal principal) {
         String logId = principal.getName();
-        return loginService.userUpdate(dto,logId);
+        return ApiResponse.success(loginService.userUpdate(dto, logId));
     }
 }
