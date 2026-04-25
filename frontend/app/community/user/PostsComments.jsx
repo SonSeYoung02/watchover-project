@@ -1,10 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import {
-  ChevronLeft,
-  MessageSquareText,
-  Heart,
-  Bookmark,
-} from "lucide-react-native"; // 아이콘 추가
+import { ChevronLeft, Heart, Bookmark } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   FlatList,
@@ -63,65 +58,50 @@ export default function UserActivityPage() {
     },
   ];
 
-  // ✅ 작성한 글 렌더링 (카드 디자인 적용)
   const renderPostItem = ({ item }) => (
     <TouchableOpacity
       style={styles.postItem}
       onPress={() => navigation.navigate("PostDetail", { id: item.id })}
-      activeOpacity={0.7}
+      activeOpacity={0.85}
     >
-      <View style={styles.postHeaderRow}>
-        <Text style={styles.postAuthor}>나의 글</Text>
-        <Text style={styles.postDate}>{item.date}</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.postTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+        {item.commentCount > 0 && (
+          <Text style={styles.commentBadge}>[{item.commentCount}]</Text>
+        )}
       </View>
 
-      <Text style={styles.postTitle} numberOfLines={1}>
-        {item.title}
-      </Text>
-
       <View style={styles.postFooterRow}>
+        <Text style={styles.authorMeta}>{item.date}</Text>
         <View style={styles.postStatsGroup}>
           <View style={styles.statItem}>
-            <MessageSquareText size={14} color="#5AA9E6" />
-            <Text style={[styles.statText, { color: "#5AA9E6" }]}>
-              {item.commentCount}
-            </Text>
+            <Heart size={13} color="#FF5A5F" />
+            <Text style={styles.statText}>{item.likes}</Text>
           </View>
           <View style={styles.statItem}>
-            <Heart size={14} color="#FF5A5F" />
-            <Text style={[styles.statText, { color: "#FF5A5F" }]}>
-              {item.likes}
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <Bookmark size={14} color="#FFD700" />
-            <Text style={[styles.statText, { color: "#FFD700" }]}>
-              {item.bookmarks}
-            </Text>
+            <Bookmark size={13} color="#5AA9E6" />
+            <Text style={styles.statText}>{item.bookmarks}</Text>
           </View>
         </View>
       </View>
     </TouchableOpacity>
   );
 
-  // ✅ 작성한 댓글 렌더링 (카드 디자인 적용)
   const renderCommentItem = ({ item }) => (
     <TouchableOpacity
       style={styles.postItem}
       onPress={() => navigation.navigate("PostDetail", { id: item.postId })}
-      activeOpacity={0.7}
+      activeOpacity={0.85}
     >
-      <View style={styles.originPostBox}>
-        <Text style={styles.originPostText} numberOfLines={1}>
-          원문: {item.postTitle}
-        </Text>
-      </View>
-
-      <Text style={styles.commentContentText}>{item.content}</Text>
-
-      <View style={styles.postFooterRow}>
-        <Text style={styles.postDate}>{item.date}</Text>
-      </View>
+      <Text style={styles.originPostText} numberOfLines={1}>
+        {item.postTitle}
+      </Text>
+      <Text style={styles.commentContentText} numberOfLines={2}>
+        {item.content}
+      </Text>
+      <Text style={styles.authorMeta}>{item.date}</Text>
     </TouchableOpacity>
   );
 
@@ -216,76 +196,55 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
-  activeTabBtn: { borderBottomColor: "#5AA9E6" }, // 메인 컬러로 변경
-  tabText: { fontSize: 15, color: "#8E8E93", fontWeight: "500" },
-  activeTabText: { color: "#333", fontWeight: "bold" },
+  activeTabBtn: { borderBottomColor: "#5AA9E6" },
+  tabText: { fontSize: 14, color: "#aaaaaa", fontWeight: "500" },
+  activeTabText: { color: "#5AA9E6", fontWeight: "700" },
 
-  listContent: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 15 },
+  listContent: { paddingHorizontal: 0, paddingBottom: 40, paddingTop: 0 },
 
-  // ✅ 공통 카드 디자인 스타일
   postItem: {
     backgroundColor: "#ffffff",
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
-        shadowRadius: 10,
-      },
-      android: { elevation: 1 },
-    }),
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eeeeee",
   },
-  postHeaderRow: {
+  titleRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
   },
-  postAuthor: { fontSize: 13, fontWeight: "700", color: "#111111" },
-  postDate: { fontSize: 12, color: "#BBBBBB" },
   postTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#333333",
-    marginBottom: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111111",
+    flex: 1,
+  },
+  commentBadge: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#5AA9E6",
+    marginLeft: 4,
   },
   postFooterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  postStatsGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  statItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  statText: { fontSize: 12, color: "#888888", fontWeight: "500" },
+  authorMeta: { fontSize: 12, color: "#bbbbbb" },
+  postStatsGroup: { flexDirection: "row", gap: 10 },
+  statItem: { flexDirection: "row", alignItems: "center", gap: 3 },
+  statText: { fontSize: 12, color: "#aaaaaa" },
 
-  // 댓글 전용 스타일
-  originPostBox: {
-    backgroundColor: "#F2F2F7",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: "flex-start",
-    marginBottom: 12,
+  originPostText: {
+    fontSize: 12,
+    color: "#aaaaaa",
+    marginBottom: 6,
   },
-  originPostText: { fontSize: 11, color: "#8E8E93", fontWeight: "600" },
   commentContentText: {
-    fontSize: 15,
-    color: "#333",
-    lineHeight: 22,
-    marginBottom: 16,
+    fontSize: 14,
+    color: "#333333",
+    lineHeight: 20,
+    marginBottom: 8,
   },
 });

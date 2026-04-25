@@ -165,7 +165,7 @@ const AiChat = () => {
         ]);
       }
     } catch (error) {
-      // ... 에러 처리 ...
+      console.error("채팅 에러:", error);
     } finally {
       setIsWaiting(false);
     }

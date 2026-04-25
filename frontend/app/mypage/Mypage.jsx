@@ -24,6 +24,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserSearch } from "../api/userApi";
 
 const MyPage = () => {
@@ -43,13 +44,16 @@ const MyPage = () => {
   useEffect(() => {
     const fetchMyData = async () => {
       try {
-        const result = await getUserSearch(1);
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) return;
+
+        const result = await getUserSearch(token);
 
         if (result && result.code === "SUCCESS" && result.data) {
           const serverUser = result.data;
           setUserInfo({
-            nickname: serverUser.name || "이름 없음",
-            email: serverUser.loginId || "이메일 정보 없음",
+            nickname: serverUser.nickname || "이름 없음",
+            email: serverUser.email || serverUser.loginId || "이메일 정보 없음",
           });
         }
       } catch (error) {

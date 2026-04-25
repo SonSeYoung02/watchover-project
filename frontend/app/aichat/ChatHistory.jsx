@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft, MessageCircle } from 'lucide-react-native';
-import { useEffect, useState } from 'react'; // 추가
+import { useEffect, useState } from 'react';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Platform,
   ScrollView,
@@ -18,15 +19,19 @@ const ChatHistory = () => {
   const navigation = useNavigation();
   const [historyData, setHistoryData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const userToken = "내_로그인_토큰"; // 실제 토큰으로 연결 필요
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         setIsLoading(true);
+        const token = await AsyncStorage.getItem("userToken");
+        if (!token) {
+          console.warn("토큰이 없습니다.");
+          return;
+        }
         
-        // ✅ 2. API 함수 호출 방식으로 변경
-        const result = await getChatList(userToken); 
+        // API 함수 호출 방식으로 변경
+        const result = await getChatList(token); 
         
         if (result && result.data) {
           setHistoryData(result.data);

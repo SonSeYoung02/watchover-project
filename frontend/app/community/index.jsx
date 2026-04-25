@@ -1,14 +1,13 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import {
   ChevronLeft,
-  ChevronRight,
   ClipboardList,
-  MessageSquareText,
+  MessageCircle,
   Search,
   SquarePen,
   Heart,
 } from "lucide-react-native";
-import { useCallback, useState, useRef } from "react"; // ✅ useRef 추가
+import { useCallback, useState, useRef } from "react";
 import {
   FlatList,
   Platform,
@@ -87,41 +86,52 @@ export default function CommunityScreen() {
     setPosts([]); // 탭 바뀔 때 이전 데이터 살짝 비워주기
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.postItem}
-      onPress={() => navigation.navigate("PostDetail", { id: item.postId })}
-      activeOpacity={0.7}
-    >
-      <View style={styles.postHeaderRow}>
-        <Text style={styles.postAuthor}>{item.nickname || item.author || "익명"}</Text>
-        <Text style={styles.postDate}>
-          {item.createdAt ? item.createdAt.split("T")[0] : ""}
-        </Text>
-      </View>
+  const getCommentCount = (item) =>
+    item.commentCount ?? item.commentCnt ?? item.replyCount ?? 0;
 
-      <Text style={styles.postTitle} numberOfLines={1}>
-        {item.title}
-      </Text>
+  const renderItem = ({ item }) => {
+    const commentCount = getCommentCount(item);
+    return (
+      <TouchableOpacity
+        style={styles.postItem}
+        onPress={() => navigation.navigate("PostDetail", { id: item.postId })}
+        activeOpacity={0.85}
+      >
+        <View style={styles.titleRow}>
+          <Text style={styles.postTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+          {commentCount > 0 && (
+            <Text style={styles.commentBadge}>[{commentCount}]</Text>
+          )}
+        </View>
 
-      <View style={styles.postFooterRow}>
-        <View style={styles.postStatsGroup}>
-          <View style={styles.statItem}>
-            <MessageSquareText size={14} color="#5AA9E6" />
-            <Text style={[styles.statText, { color: "#5AA9E6" }]}>
-              {item.commentCount || 0}
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <Heart size={14} color="#FF5A5F" />
-            <Text style={[styles.statText, { color: "#FF5A5F" }]}>
-              {item.likeCount || 0}
-            </Text>
+        {!!item.content && (
+          <Text style={styles.postContentPreview} numberOfLines={2}>
+            {item.content}
+          </Text>
+        )}
+
+        <View style={styles.postFooterRow}>
+          <Text style={styles.authorMeta}>
+            {item.nickname || item.author || "익명"}
+            {"  ·  "}
+            {item.createdAt ? item.createdAt.split("T")[0] : ""}
+          </Text>
+          <View style={styles.postStatsGroup}>
+            <View style={styles.statItem}>
+              <Heart size={13} color="#FF5A5F" />
+              <Text style={styles.statText}>{item.likeCount || 0}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <MessageCircle size={13} color="#5AA9E6" />
+              <Text style={styles.statText}>{commentCount}</Text>
+            </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -196,7 +206,6 @@ export default function CommunityScreen() {
   );
 }
 
-// 스타일은 원석 님 기존 코드와 동일 (깔끔함!)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
   header: {
@@ -226,41 +235,55 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    height: 48,
+    height: 44,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
   activeTabButton: { borderBottomColor: "#5AA9E6" },
-  topTabItem: { fontSize: 15, color: "#999", fontWeight: "500" },
-  activeTabText: { color: "#333", fontWeight: "bold" },
-  listContent: { paddingHorizontal: 20, paddingTop: 15, paddingBottom: 100 },
+  topTabItem: { fontSize: 14, color: "#aaaaaa", fontWeight: "500" },
+  activeTabText: { color: "#5AA9E6", fontWeight: "700" },
+  listContent: { paddingHorizontal: 0, paddingTop: 0, paddingBottom: 100 },
   postItem: {
     backgroundColor: "#ffffff",
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
-    elevation: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eeeeee",
   },
-  postHeaderRow: {
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  postTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111111",
+    flex: 1,
+  },
+  commentBadge: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#5AA9E6",
+    marginLeft: 4,
+  },
+  postContentPreview: {
+    fontSize: 13,
+    color: "#888888",
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+  postFooterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    alignItems: "center",
+    marginTop: 6,
   },
-  postAuthor: { fontSize: 13, fontWeight: "700", color: "#111111" },
-  postDate: { fontSize: 12, color: "#BBB" },
-  postTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#333333",
-    marginBottom: 16,
-  },
-  postFooterRow: { flexDirection: "row", justifyContent: "space-between" },
-  postStatsGroup: { flexDirection: "row", gap: 12 },
-  statItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  statText: { fontSize: 12, color: "#888" },
-  emptyContainer: { alignItems: "center", marginTop: 50 },
+  authorMeta: { fontSize: 12, color: "#bbbbbb" },
+  postStatsGroup: { flexDirection: "row", gap: 10 },
+  statItem: { flexDirection: "row", alignItems: "center", gap: 3 },
+  statText: { fontSize: 12, color: "#aaaaaa" },
+  emptyContainer: { alignItems: "center", marginTop: 60 },
   emptyText: { color: "#999", fontSize: 15 },
   fab: {
     position: "absolute",
@@ -272,5 +295,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#5AA9E6",
     alignItems: "center",
     justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
 });

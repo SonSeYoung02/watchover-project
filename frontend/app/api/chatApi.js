@@ -5,7 +5,6 @@ import client from './client';
  */
 export const startChatRoom = async (token) => {
   try {
-    // 백엔드 명세서 기준: POST /api/chatBot/0
     const response = await client.post('/api/chatBot/0', {}, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -27,6 +26,9 @@ export const sendChatMessage = async (chatRoomId, message, token) => {
     );
     return response.data;
   } catch (error) {
+    if (error.response) {
+      console.error("메시지 전송 500 에러 상세 내역:", error.response.data);
+    }
     console.error("메시지 전송 에러:", error);
     throw error;
   }
