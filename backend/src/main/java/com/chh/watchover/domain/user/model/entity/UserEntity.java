@@ -49,11 +49,11 @@ public class UserEntity {
 
     public static UserEntity of(RegisterRequestDto dto, String encodedPassword) {
         return UserEntity.builder()
-                .loginId(dto.getLoginId())
+                .loginId(dto.loginId())
                 .loginPw(encodedPassword)
-                .email(dto.getEmail())
-                .nickname(dto.getNickname())
-                .gender(dto.getGender())
+                .email(dto.email())
+                .nickname(dto.nickname())
+                .gender(dto.gender())
                 .build();
     }
 
@@ -61,10 +61,10 @@ public class UserEntity {
     public UserEntity userUpdate(UserUpdateRequestDto dto, String loginPw) {
         boolean isChanged = false;
 
-        if (dto.getLoginPw() != null) {this.loginPw = loginPw;isChanged = true;}
-        if (dto.getNickname() != null) {this.nickname = dto.getNickname();isChanged = true;}
-        if (dto.getEmail() != null) {this.email = dto.getEmail();isChanged = true;}
-        if (dto.getGender() != null) {this.gender = dto.getGender(); isChanged = true;}
+        if (dto.loginPw() != null) {this.loginPw = loginPw; isChanged = true;}
+        if (dto.nickname() != null) {this.nickname = dto.nickname(); isChanged = true;}
+        if (dto.email() != null) {this.email = dto.email(); isChanged = true;}
+        if (dto.gender() != null) {this.gender = dto.gender(); isChanged = true;}
 
         if (isChanged) {this.updatedAt = LocalDateTime.now();}
 
