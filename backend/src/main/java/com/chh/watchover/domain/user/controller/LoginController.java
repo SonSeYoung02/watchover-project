@@ -37,16 +37,16 @@ public class LoginController {
     }
 
     /**
-     * 보인 정보 조회 API.
+     * 본인 정보 조회 API.
      * 로그인한 유저의 정보를 조회합니다.
      *
      * @return 유저 정보를 담은 표준 응답
      */
+    @Operation(summary = "유저 조회")
     @GetMapping("/search/me")
     public ApiResponse<SearchResponseDto> userSearch(Principal principal) {
         String loginId = principal.getName();
         return ApiResponse.success(loginService.userSearch(loginId));
-    @Operation(summary = "유저 조회")
     }
 
     /**
