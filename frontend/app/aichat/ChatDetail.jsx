@@ -1,6 +1,7 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ChevronLeft, Lock } from 'lucide-react-native';
-import { useEffect, useState } from 'react'; // 추가
+import { useEffect, useState } from 'react';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Platform,
   ScrollView,
@@ -20,19 +21,24 @@ const ChatDetail = () => {
   const { id } = route.params || {}; 
   const [chatLogs, setChatLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const userToken = "내_로그인_토큰"; // 실제 토큰으로 연결 필요
 
   useEffect(() => {
     const fetchDetail = async () => {
       try {
         setIsLoading(true);
+        const token = await AsyncStorage.getItem("userToken");
+        if (!token) {
+          console.warn("토큰이 없습니다.");
+          return;
+        }
         
-        // ✅ 2. API 함수 호출 방식으로 변경
-        const result = await getChatDetail(id, userToken);
+        // API 함수 호출 방식으로 변경
+        const result = await getChatDetail(id, token);
         
         if (result && result.data) {
           // 서버 데이터 구조에 맞춰 저장
-          setChatLogs(result.data.chatLogs || []);
+          const logs = Array.isArray(result.data) ? result.data : (result.data.chatLogs || []);
+          setChatLogs(logs);
         }
       } catch (error) {
         console.error('상세 내역 로드 실패:', error);
@@ -62,18 +68,32 @@ const ChatDetail = () => {
             <Text style={styles.dateText}>대화 기록 (ID: {id})</Text>
           </View>
 
-          {chatLogs.map((log, index) => (
-            <View key={index} style={[styles.messageRow, log.type === 'ai' ? styles.aiRow : styles.userRow]}>
-              {log.type === 'ai' && (
-                <View style={styles.aiAvatar}><Text style={styles.avatarText}>AI</Text></View>
-              )}
-              <View style={[styles.bubble, log.type === 'ai' ? styles.aiBubble : styles.userBubble]}>
-                <Text style={[styles.messageText, log.type === 'ai' ? styles.aiText : styles.userText]}>
-                  {log.text || log.message}
-                </Text>
+          {(() => {
+            // Нормализация 데이터
+            let normalizedLogs = [];
+            chatLogs.forEach(log => {
+              if (log.type === 'user' || log.type === 'ai') {
+                normalizedLogs.push(log);
+              } else {
+                // If it's a combined object like { message: "...", answer: "..." }
+                if (log.message) normalizedLogs.push({ type: 'user', text: log.message });
+                if (log.answer) normalizedLogs.push({ type: 'ai', text: log.answer });
+              }
+            });
+            
+            return normalizedLogs.map((log, index) => (
+              <View key={index} style={[styles.messageRow, log.type === 'ai' ? styles.aiRow : styles.userRow]}>
+                {log.type === 'ai' && (
+                  <View style={styles.aiAvatar}><Text style={styles.avatarText}>AI</Text></View>
+                )}
+                <View style={[styles.bubble, log.type === 'ai' ? styles.aiBubble : styles.userBubble]}>
+                  <Text style={[styles.messageText, log.type === 'ai' ? styles.aiText : styles.userText]}>
+                    {log.text || log.message || log.answer}
+                  </Text>
+                </View>
               </View>
-            </View>
-          ))}
+            ));
+          })()}
         </ScrollView>
       )}
 

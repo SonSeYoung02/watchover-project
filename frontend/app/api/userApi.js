@@ -2,16 +2,16 @@ import client from './client';
 
 /**
  * 내 정보 조회 API
- * @param {string|number} userId - 조회할 유저의 ID
+ * @param {string} token - 인증 토큰
  */
-export const getUserSearch = async (userId, token) => {
+export const getUserSearch = async (token) => {
   try {
-    const response = await client.get(`/api/user/search/${userId}`, {
+    const response = await client.get(`/api/user/search/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return response.data; // { code: "SUCCESS", data: { name: "...", loginId: "..." } }
+    return response.data; // { code: "SUCCESS", data: { nickname: "...", loginId: "..." } }
   } catch (error) {
-    console.error(`유저 ${userId} 정보 로드 에러:`, error);
+    console.error(`내 정보 로드 에러:`, error);
     throw error;
   }
 };

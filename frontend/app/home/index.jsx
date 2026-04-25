@@ -51,18 +51,16 @@ const MainHome = () => {
     const fetchUserInfo = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
-        const userId = await AsyncStorage.getItem('userId');
         console.log('🔍 저장된 token:', token);
-        console.log('🔍 저장된 userId:', userId);
-        if (!token || !userId) {
-          console.warn('⚠️ token 또는 userId가 없습니다. 로그인 응답 필드명을 확인하세요.');
+        if (!token) {
+          console.warn('⚠️ token이 없습니다. 로그인 상태를 확인하세요.');
           return;
         }
 
-        const result = await getUserSearch(userId, token);
+        const result = await getUserSearch(token);
         console.log('👤 유저 정보 응답:', JSON.stringify(result, null, 2));
         if (result && result.code === 'SUCCESS' && result.data) {
-          setUserName(result.data.nickname || result.data.name || '');
+          setUserName(result.data.nickname || result.data.loginId || '유저');
         }
       } catch (error) {
         console.error('유저 정보 로드 실패:', error);
