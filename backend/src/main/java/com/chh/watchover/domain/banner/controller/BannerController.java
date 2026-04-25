@@ -4,6 +4,8 @@ import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.domain.banner.model.dto.BannerResponseDto;
 import com.chh.watchover.domain.banner.service.BannerService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,31 +23,25 @@ public class BannerController {
 
     private final BannerService bannerService;
 
-    /**
-     * 현재 활성화된 배너 목록 전체를 조회한다.
-     *
-     * @return 활성 배너 리스트를 담은 ResponseEntity
-     */
-    // 기존: GET /api/banners
-    @Operation(summary = "활성 배너 전체 조회")
+    @Operation(summary = "활성 배너 전체 조회", description = "현재 활성화된 배너 목록 전체를 조회합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
+    })
     @GetMapping
     public ResponseEntity<ApiResponse<List<BannerResponseDto>>> getBanners() {
         List<BannerResponseDto> activeBanners = bannerService.getActiveBanners();
         return ResponseEntity.ok(ApiResponse.success(activeBanners));
     }
 
-    /**
-     * 특정 ID에 해당하는 활성 배너 단건을 조회한다.
-     *
-     * @param id 조회할 배너의 고유 식별자
-     * @return 조회된 배너 정보를 담은 ResponseEntity
-     */
-    // 추가: GET /api/banners/{id}
-    @Operation(summary = "배너 단건 조회")
+    @Operation(summary = "배너 단건 조회", description = "특정 ID에 해당하는 활성 배너 단건을 조회합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "배너 없음")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<BannerResponseDto>> getBannerById(@PathVariable("id") Long id) {
+    public ResponseEntity<ApiResponse<BannerResponseDto>> getBannerById(
+            @Parameter(description = "조회할 배너 ID", required = true) @PathVariable("id") Long id) {
         BannerResponseDto banner = bannerService.getActiveBannerById(id);
-        // 데이터가 리스트가 아닌 단일 객체로 응답됨
         return ResponseEntity.ok(ApiResponse.success(banner));
     }
 }
