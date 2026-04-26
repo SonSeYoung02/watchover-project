@@ -11,7 +11,7 @@ export default function Splash() {
       try {
         // 스플래시 화면을 2초간 보여줍니다.
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        
+
         // 로그인 화면으로 이동
         navigation.reset({ index: 0, routes: [{ name: "Login" }] });
       } catch (error) {

@@ -139,10 +139,7 @@ const Login = () => {
             <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
               <Text style={styles.footerText}>회원가입</Text>
             </TouchableOpacity>
-            <View style={styles.divider} />
-            <TouchableOpacity>
-              <Text style={styles.footerText}>아이디/비밀번호 찾기</Text>
-            </TouchableOpacity>
+
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
@@ -247,10 +244,5 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 14,
     color: "#8E8E93",
-  },
-  divider: {
-    width: 1,
-    height: 12,
-    backgroundColor: "#D1D1D6",
   },
 });

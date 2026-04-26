@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ClipboardList,
   MessageCircle,
+  MoreVertical,
   Search,
   SquarePen,
   Heart,
@@ -10,7 +11,9 @@ import {
 import { useCallback, useState, useRef } from "react";
 import {
   FlatList,
+  Modal,
   Platform,
+  Pressable,
   StatusBar,
   StyleSheet,
   Text,
@@ -92,50 +95,45 @@ export default function CommunityScreen() {
     setPosts([]); // 탭 바뀔 때 이전 데이터 살짝 비워주기
   };
 
+
+
   const getCommentCount = (item) =>
     item.commentCount ?? item.commentCnt ?? item.replyCount ?? 0;
 
   const renderItem = ({ item }) => {
     const commentCount = getCommentCount(item);
     return (
-      <TouchableOpacity
-        style={styles.postItem}
-        onPress={() => navigation.navigate("PostDetail", { id: item.postId })}
-        activeOpacity={0.85}
-      >
-        <View style={styles.titleRow}>
-          <Text style={styles.postTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-          {commentCount > 0 && (
-            <Text style={styles.commentBadge}>[{commentCount}]</Text>
+      <View style={styles.postItem}>
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => navigation.navigate("PostDetail", { id: item.postId })}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.postTitle} numberOfLines={1}>{item.title}</Text>
+          {!!item.content && (
+            <Text style={styles.postContentPreview} numberOfLines={1}>
+              {item.content}
+            </Text>
           )}
-        </View>
-
-        {!!item.content && (
-          <Text style={styles.postContentPreview} numberOfLines={2}>
-            {item.content}
-          </Text>
-        )}
-
-        <View style={styles.postFooterRow}>
-          <Text style={styles.authorMeta}>
-            {item.nickname || item.author || "익명"}
-            {"  ·  "}
-            {item.createdAt ? item.createdAt.split("T")[0] : ""}
-          </Text>
-          <View style={styles.postStatsGroup}>
-            <View style={styles.statItem}>
-              <Heart size={13} color="#FF5A5F" />
-              <Text style={styles.statText}>{item.likeCount || 0}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <MessageCircle size={13} color="#5AA9E6" />
-              <Text style={styles.statText}>{commentCount}</Text>
+          <View style={styles.postFooterRow}>
+            <Text style={styles.authorMeta}>
+              {item.nickname || item.author || "익명"}
+              {"  ·  "}
+              {item.createdAt ? item.createdAt.split("T")[0] : ""}
+            </Text>
+            <View style={styles.postStats}>
+              <View style={styles.statItem}>
+                <Heart size={12} color="#FF5A5F" />
+                <Text style={styles.statText}>{item.likeCount || 0}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <MessageCircle size={12} color="#5AA9E6" />
+                <Text style={styles.statText}>{commentCount}</Text>
+              </View>
             </View>
           </View>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -208,6 +206,8 @@ export default function CommunityScreen() {
       >
         <SquarePen color="#ffffff" size={24} />
       </TouchableOpacity>
+
+
     </SafeAreaView>
   );
 }
@@ -248,47 +248,40 @@ const styles = StyleSheet.create({
   activeTabButton: { borderBottomColor: "#5AA9E6" },
   topTabItem: { fontSize: 14, color: "#aaaaaa", fontWeight: "500" },
   activeTabText: { color: "#5AA9E6", fontWeight: "700" },
-  listContent: { paddingHorizontal: 0, paddingTop: 0, paddingBottom: 100 },
+  listContent: { paddingBottom: 100 },
   postItem: {
     backgroundColor: "#ffffff",
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eeeeee",
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
+    borderBottomColor: "#f0f0f0",
   },
   postTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111111",
-    flex: 1,
-  },
-  commentBadge: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#5AA9E6",
-    marginLeft: 4,
+    color: "#111111",
+    marginBottom: 3,
   },
   postContentPreview: {
     fontSize: 13,
-    color: "#888888",
-    lineHeight: 19,
-    marginBottom: 10,
+    color: "#999999",
+    lineHeight: 18,
+    marginBottom: 8,
   },
   postFooterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 6,
   },
-  authorMeta: { fontSize: 12, color: "#bbbbbb" },
-  postStatsGroup: { flexDirection: "row", gap: 10 },
-  statItem: { flexDirection: "row", alignItems: "center", gap: 3 },
-  statText: { fontSize: 12, color: "#aaaaaa" },
+  authorMeta: { fontSize: 11, color: "#cccccc" },
+  postStats: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  statItem: { flexDirection: "row", alignItems: "center", gap: 2 },
+  statText: { fontSize: 11, color: "#aaaaaa" },
+
+
   emptyContainer: { alignItems: "center", marginTop: 60 },
   emptyText: { color: "#999", fontSize: 15 },
   fab: {

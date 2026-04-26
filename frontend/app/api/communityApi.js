@@ -102,6 +102,33 @@ export const getMyPostList = async (token, page = 0, size = 20) => {
   }
 };
 
+export const deletePost = async (postId, token) => {
+  try {
+    const response = await client.delete(`/api/community/post/${postId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('게시글 삭제 에러:', error);
+    throw error;
+  }
+};
+
+export const updatePost = async (postId, postData, token) => {
+  try {
+    const response = await client.patch(`/api/community/post/${postId}`, postData, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('게시글 수정 에러:', error);
+    throw error;
+  }
+};
+
 export const getMyCommentList = async (token, page = 0, size = 20) => {
   try {
     const response = await client.get('/api/community/comment', {

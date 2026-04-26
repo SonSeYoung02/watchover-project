@@ -1,5 +1,5 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ChevronLeft, MoreVertical, Heart, MessageCircle, Send, Bookmark } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Heart, MessageCircle, Send, Bookmark, AlertTriangle, UserMinus, Mail, Edit3, Trash2 } from 'lucide-react-native';
 import { useState, useEffect, useRef } from 'react';
 import {
   Platform,
@@ -12,11 +12,13 @@ import {
   View,
   KeyboardAvoidingView,
   ActivityIndicator,
-  Alert
+  Alert,
+  Modal as RNModal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getPostDetail, registerComment, likePost, bookmarkPost } from '../../api/communityApi';
+import { getPostDetail, registerComment, likePost, bookmarkPost, deletePost } from '../../api/communityApi';
+import { getUserSearch } from '../../api/userApi';
 
 export default function PostDetail() {
   const navigation = useNavigation();
@@ -32,7 +34,27 @@ export default function PostDetail() {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const isBookmarkProcessing = useRef(false);
-  const isLikeProcessing = useRef(false);
+  const [isLikeProcessing, setIsLikeProcessing] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  useEffect(() => {
+    const initData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (token) {
+          const userResult = await getUserSearch(token);
+          if (userResult.code === 'SUCCESS') {
+            setCurrentUser(userResult.data);
+          }
+        }
+      } catch (err) {
+        console.log('유저 정보 초기화 실패:', err);
+      }
+    };
+    initData();
+  }, []);
 
   useEffect(() => {
     const fetchPostDetail = async () => {
@@ -71,8 +93,8 @@ export default function PostDetail() {
   }, [id]);
 
   const handleLikeToggle = async () => {
-    if (isLikeProcessing.current) return;
-    isLikeProcessing.current = true;
+    if (isLikeProcessing) return;
+    setIsLikeProcessing(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
       const result = await likePost(id, token);
@@ -86,7 +108,7 @@ export default function PostDetail() {
       console.error('좋아요 처리 에러:', error);
       Alert.alert('오류', '좋아요 처리에 실패했습니다.');
     } finally {
-      isLikeProcessing.current = false;
+      setIsLikeProcessing(false);
     }
   };
 
@@ -147,6 +169,56 @@ export default function PostDetail() {
     }
   };
 
+  const handleDelete = () => {
+    console.log('🗑️ 삭제 버튼 클릭됨');
+    setShowMenu(false);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteModal(false);
+    const targetId = post?.postId || id;
+    console.log(`🚀 삭제 시도 - postId: ${targetId}, 타입: ${typeof targetId}`);
+    
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      const result = await deletePost(targetId, token);
+      
+      console.log('✅ 삭제 응답:', JSON.stringify(result, null, 2));
+      
+      if (result && (result.code === "SUCCESS" || result.status === 200)) {
+        Alert.alert("성공", "게시물이 삭제되었습니다.");
+        navigation.goBack();
+      } else {
+        throw new Error(result?.message || '삭제 요청이 거부되었습니다.');
+      }
+    } catch (error) {
+      console.error("❌ 삭제 실패 상세:", error);
+      const errorMsg = error.response?.data?.message || error.message;
+      const status = error.response?.status;
+      
+      if (status === 403) {
+        Alert.alert("권한 오류", "본인이 작성한 글만 삭제할 수 있습니다.");
+      } else if (status === 404) {
+        Alert.alert("오류", "존재하지 않는 게시물입니다.");
+      } else {
+        Alert.alert("삭제 실패", `오류: ${errorMsg}`);
+      }
+    }
+  };
+
+  const handleEdit = () => {
+    setShowMenu(false);
+    navigation.navigate("PostWrite", { editPost: post });
+  };
+
+  const handleMockAction = (action) => {
+    setShowMenu(false);
+    Alert.alert("알림", `${action} 기능은 준비 중입니다.`);
+  };
+
+  const isAuthor = post && currentUser && post.authorNickname === currentUser.nickname;
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
@@ -166,10 +238,79 @@ export default function PostDetail() {
           <ChevronLeft color="#333" size={28} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>게시글</Text>
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMenu(true)}>
           <MoreVertical color="#333" size={24} />
         </TouchableOpacity>
       </View>
+
+      {/* Everytime Style Delete Confirmation Modal */}
+      <RNModal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>글을 삭제하시겠습니까?</Text>
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.cancelBtn]} 
+                onPress={() => setShowDeleteModal(false)}
+              >
+                <Text style={styles.cancelBtnText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.confirmBtn]} 
+                onPress={confirmDelete}
+              >
+                <Text style={styles.confirmBtnText}>삭제</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </RNModal>
+      {showMenu && (
+        <View style={StyleSheet.absoluteFill}>
+          <TouchableOpacity 
+            style={styles.menuOverlay} 
+            activeOpacity={1} 
+            onPress={() => setShowMenu(false)} 
+          />
+          <View style={styles.menuPopup}>
+            {isAuthor ? (
+              <>
+                <TouchableOpacity style={styles.menuItem} onPress={handleEdit}>
+                  <Edit3 size={18} color="#444" style={styles.menuIcon} />
+                  <Text style={styles.menuItemText}>게시글 수정</Text>
+                </TouchableOpacity>
+                <View style={styles.menuSeparator} />
+                <TouchableOpacity style={styles.menuItem} onPress={handleDelete}>
+                  <Trash2 size={18} color="#FF3B30" style={styles.menuIcon} />
+                  <Text style={[styles.menuItemText, { color: '#FF3B30' }]}>게시글 삭제</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity style={styles.menuItem} onPress={() => handleMockAction('쪽지')}>
+                  <Mail size={18} color="#444" style={styles.menuIcon} />
+                  <Text style={styles.menuItemText}>쪽지 보내기</Text>
+                </TouchableOpacity>
+                <View style={styles.menuSeparator} />
+                <TouchableOpacity style={styles.menuItem} onPress={() => handleMockAction('신고')}>
+                  <AlertTriangle size={18} color="#444" style={styles.menuIcon} />
+                  <Text style={styles.menuItemText}>신고</Text>
+                </TouchableOpacity>
+                <View style={styles.menuSeparator} />
+                <TouchableOpacity style={styles.menuItem} onPress={() => handleMockAction('차단')}>
+                  <UserMinus size={18} color="#444" style={styles.menuIcon} />
+                  <Text style={styles.menuItemText}>차단</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -185,7 +326,6 @@ export default function PostDetail() {
             </Text>
           </View>
 
-          <View style={styles.divider} />
 
           <View style={styles.postBody}>
             <Text style={styles.postContent}>{post.content}</Text>
@@ -296,5 +436,97 @@ const styles = StyleSheet.create({
   sendBtn: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: '#5AA9E6',
     justifyContent: 'center', alignItems: 'center', marginLeft: 12,
+  },
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  menuPopup: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 100 : 90,
+    right: 16,
+    width: 160,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+    paddingVertical: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+    zIndex: 9999,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuItemText: {
+    fontSize: 14,
+    color: '#333333',
+    fontWeight: '500',
+  },
+  menuSeparator: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginHorizontal: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333333',
+    marginBottom: 24,
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelBtn: {
+    backgroundColor: '#F1F3F5',
+  },
+  confirmBtn: {
+    backgroundColor: '#FF5A5F',
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#868E96',
+  },
+  confirmBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });
