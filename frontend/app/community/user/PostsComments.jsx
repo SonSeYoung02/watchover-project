@@ -1,7 +1,8 @@
 import { useNavigation } from "@react-navigation/native";
 import { ChevronLeft, Heart, Bookmark } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Platform,
   SafeAreaView,
@@ -11,78 +12,63 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getMyPostList, getMyCommentList } from "../../api/communityApi";
 
 export default function UserActivityPage() {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState("posts");
+  const [myPosts, setMyPosts] = useState([]);
+  const [myComments, setMyComments] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 샘플 데이터 유지
-  const myPosts = [
-    {
-      id: "1",
-      title: "리액트 네이티브 너무 재밌네요!",
-      views: 125,
-      likes: 15,
-      bookmarks: 5,
-      commentCount: 2,
-      date: "2026.03.27",
-    },
-    {
-      id: "2",
-      title: "Expo에서 안드로이드 에뮬레이터 설정법",
-      views: 420,
-      likes: 32,
-      bookmarks: 12,
-      commentCount: 8,
-      date: "2026.03.20",
-    },
-  ];
+  useEffect(() => {
+    fetchData(activeTab);
+  }, [activeTab]);
 
-  const myComments = [
-    {
-      id: "c1",
-      postId: "1",
-      content:
-        "공감합니다! UI 만드는 재미가 확실하죠. 특히 애니메이션 넣을 때가 제일 짜릿해요.",
-      postTitle: "리액트 네이티브 너무 재밌네요!",
-      likes: 3,
-      date: "15분 전",
-    },
-    {
-      id: "c2",
-      postId: "105",
-      content: "저도 이거 궁금했는데 해결됐어요! 감사합니다.",
-      postTitle: "비타민C 부족 증상 정리",
-      likes: 1,
-      date: "2시간 전",
-    },
-  ];
+  const fetchData = async (tab) => {
+    setIsLoading(true);
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (tab === "posts") {
+        const result = await getMyPostList(token);
+        const list = result?.data?.listPost || [];
+        setMyPosts(list);
+      } else {
+        const result = await getMyCommentList(token);
+        const list = result?.data?.listComment || [];
+        setMyComments(list);
+      }
+    } catch (error) {
+      console.error("나의 활동 로드 실패:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    return dateStr.split("T")[0];
+  };
 
   const renderPostItem = ({ item }) => (
     <TouchableOpacity
       style={styles.postItem}
-      onPress={() => navigation.navigate("PostDetail", { id: item.id })}
+      onPress={() => navigation.navigate("PostDetail", { id: item.postId })}
       activeOpacity={0.85}
     >
       <View style={styles.titleRow}>
         <Text style={styles.postTitle} numberOfLines={1}>
           {item.title}
         </Text>
-        {item.commentCount > 0 && (
-          <Text style={styles.commentBadge}>[{item.commentCount}]</Text>
-        )}
       </View>
 
       <View style={styles.postFooterRow}>
-        <Text style={styles.authorMeta}>{item.date}</Text>
+        <Text style={styles.authorMeta}>{formatDate(item.createdAt)}</Text>
         <View style={styles.postStatsGroup}>
           <View style={styles.statItem}>
             <Heart size={13} color="#FF5A5F" />
-            <Text style={styles.statText}>{item.likes}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Bookmark size={13} color="#5AA9E6" />
-            <Text style={styles.statText}>{item.bookmarks}</Text>
+            <Text style={styles.statText}>{item.likeCount || 0}</Text>
           </View>
         </View>
       </View>
@@ -96,12 +82,12 @@ export default function UserActivityPage() {
       activeOpacity={0.85}
     >
       <Text style={styles.originPostText} numberOfLines={1}>
-        {item.postTitle}
+        게시글 #{item.postId}
       </Text>
       <Text style={styles.commentContentText} numberOfLines={2}>
         {item.content}
       </Text>
-      <Text style={styles.authorMeta}>{item.date}</Text>
+      <Text style={styles.authorMeta}>{formatDate(item.createdAt)}</Text>
     </TouchableOpacity>
   );
 
@@ -152,12 +138,31 @@ export default function UserActivityPage() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={activeTab === "posts" ? myPosts : myComments}
-        renderItem={activeTab === "posts" ? renderPostItem : renderCommentItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#5AA9E6" />
+        </View>
+      ) : (
+        <FlatList
+          data={activeTab === "posts" ? myPosts : myComments}
+          renderItem={activeTab === "posts" ? renderPostItem : renderCommentItem}
+          keyExtractor={(item) =>
+            activeTab === "posts"
+              ? item.postId.toString()
+              : item.commentId.toString()
+          }
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {activeTab === "posts"
+                  ? "작성한 글이 없습니다."
+                  : "작성한 댓글이 없습니다."}
+              </Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -200,7 +205,10 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 14, color: "#aaaaaa", fontWeight: "500" },
   activeTabText: { color: "#5AA9E6", fontWeight: "700" },
 
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   listContent: { paddingHorizontal: 0, paddingBottom: 40, paddingTop: 0 },
+  emptyContainer: { alignItems: "center", marginTop: 60 },
+  emptyText: { color: "#999", fontSize: 15 },
 
   postItem: {
     backgroundColor: "#ffffff",
@@ -219,12 +227,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111111",
     flex: 1,
-  },
-  commentBadge: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#5AA9E6",
-    marginLeft: 4,
   },
   postFooterRow: {
     flexDirection: "row",

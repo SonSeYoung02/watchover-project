@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ChevronLeft, MoreVertical, Heart, MessageCircle, Send, Bookmark } from 'lucide-react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Platform,
   ScrollView,
@@ -31,6 +31,8 @@ export default function PostDetail() {
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const isBookmarkProcessing = useRef(false);
+  const isLikeProcessing = useRef(false);
 
   useEffect(() => {
     const fetchPostDetail = async () => {
@@ -69,24 +71,29 @@ export default function PostDetail() {
   }, [id]);
 
   const handleLikeToggle = async () => {
+    if (isLikeProcessing.current) return;
+    isLikeProcessing.current = true;
     try {
       const token = await AsyncStorage.getItem('userToken');
       const result = await likePost(id, token);
       if (result && result.code === "SUCCESS" && result.data) {
         const newIsLiked = result.data.isLike;
         setIsLiked(newIsLiked);
-        // Toggle like count based on state change
         setLikeCount(prev => newIsLiked ? prev + 1 : Math.max(0, prev - 1));
-        // 로컬에 상태 저장
         await AsyncStorage.setItem(`liked_${id}`, String(newIsLiked));
       }
     } catch (error) {
       console.error('좋아요 처리 에러:', error);
       Alert.alert('오류', '좋아요 처리에 실패했습니다.');
+    } finally {
+      isLikeProcessing.current = false;
     }
   };
 
   const handleBookmarkToggle = async () => {
+    if (isBookmarkProcessing.current) return;
+    isBookmarkProcessing.current = true;
+
     const newIsBookmarked = !isBookmarked;
     setIsBookmarked(newIsBookmarked);
     await AsyncStorage.setItem(`bookmarked_${id}`, String(newIsBookmarked));
@@ -94,14 +101,35 @@ export default function PostDetail() {
       const token = await AsyncStorage.getItem('userToken');
       const result = await bookmarkPost(id, token);
       if (result?.data?.isBookmark !== undefined) {
-        setIsBookmarked(result.data.isBookmark);
-        await AsyncStorage.setItem(`bookmarked_${id}`, String(result.data.isBookmark));
+        const confirmed = result.data.isBookmark;
+        setIsBookmarked(confirmed);
+        await AsyncStorage.setItem(`bookmarked_${id}`, String(confirmed));
+
+        // 커뮤니티 북마크 탭용 로컬 목록 동기화
+        const stored = await AsyncStorage.getItem('bookmarkedPosts');
+        let list = stored ? JSON.parse(stored) : [];
+        if (confirmed) {
+          if (post && !list.find(p => p.postId === post.postId)) {
+            list.push({
+              postId: post.postId,
+              title: post.title,
+              content: post.content,
+              likeCount: post.likeCount,
+              createdAt: post.createdAt,
+            });
+          }
+        } else {
+          list = list.filter(p => p.postId !== post.postId);
+        }
+        await AsyncStorage.setItem('bookmarkedPosts', JSON.stringify(list));
       }
     } catch (error) {
       setIsBookmarked(!newIsBookmarked);
       await AsyncStorage.setItem(`bookmarked_${id}`, String(!newIsBookmarked));
       console.error('북마크 처리 에러:', error);
       Alert.alert('오류', '북마크 처리에 실패했습니다.');
+    } finally {
+      isBookmarkProcessing.current = false;
     }
   };
 
@@ -153,7 +181,7 @@ export default function PostDetail() {
           <View style={styles.postHeader}>
             <Text style={styles.postTitle}>{post.title}</Text>
             <Text style={styles.authorMeta}>
-              {post.nickname || post.author || '익명'}{'  ·  '}{post.createdAt ? post.createdAt.split('T')[0] : ''}
+              {post.authorNickname || '익명'}{'  ·  '}{post.createdAt ? post.createdAt.split('T')[0] : ''}
             </Text>
           </View>
 
@@ -186,9 +214,9 @@ export default function PostDetail() {
           <View style={styles.commentSection}>
             <Text style={styles.commentHeader}>댓글 {comments.length}</Text>
             {comments.map((comment, index) => (
-              <View key={comment.id || index} style={styles.commentItem}>
+              <View key={comment.commentId || index} style={styles.commentItem}>
                 <View style={styles.commentAuthorRow}>
-                  <Text style={styles.commentAuthor}>{comment.author || '익명'}</Text>
+                  <Text style={styles.commentAuthor}>{comment.nickname || '익명'}</Text>
                   <Text style={styles.commentTime}>{comment.createdAt ? comment.createdAt.split('T')[0] : '방금 전'}</Text>
                 </View>
                 <Text style={styles.commentText}>{comment.content || comment.text}</Text>

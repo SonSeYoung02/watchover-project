@@ -88,3 +88,29 @@ export const bookmarkPost = async (postId, token) => {
     throw error;
   }
 };
+
+export const getMyPostList = async (token, page = 0, size = 20) => {
+  try {
+    const response = await client.get('/api/community/list', {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { page, size },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('나의 게시글 로드 에러:', error);
+    throw error;
+  }
+};
+
+export const getMyCommentList = async (token, page = 0, size = 20) => {
+  try {
+    const response = await client.get('/api/community/comment', {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { page, size },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('나의 댓글 로드 에러:', error);
+    throw error;
+  }
+};

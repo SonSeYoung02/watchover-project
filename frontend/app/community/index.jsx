@@ -51,6 +51,12 @@ export default function CommunityScreen() {
 
         console.log(`📍 [${tabName}] API 호출 시작`);
 
+        if (tabName === "북마크") {
+          const stored = await AsyncStorage.getItem("bookmarkedPosts");
+          setPosts(stored ? JSON.parse(stored) : []);
+          return;
+        }
+
         let result;
         if (tabName === "인기글") {
           result = await getPopularPostList(token);
