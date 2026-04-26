@@ -7,5 +7,5 @@ spring:
     password: "${DB_PASSWORD_PROD}"
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: false
