@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { ChevronLeft } from 'lucide-react-native';
 import { useState } from 'react';
 import {
@@ -16,12 +16,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createPost } from '../api/communityApi';
+import { createPost, updatePost } from '../api/communityApi';
 
 export default function PostWrite() {
   const navigation = useNavigation();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const route = useRoute();
+  const { editPost } = route.params || {};
+
+  const [title, setTitle] = useState(editPost?.title || '');
+  const [content, setContent] = useState(editPost?.content || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSave = async () => {
@@ -40,15 +43,21 @@ export default function PostWrite() {
       }
 
       const postData = { title, content };
-      const result = await createPost(postData, token);
-      console.log('✅ 글쓰기 응답:', JSON.stringify(result, null, 2));
+      let result;
+      if (editPost) {
+        result = await updatePost(editPost.postId, postData, token);
+        console.log('✅ 글수정 응답:', JSON.stringify(result, null, 2));
+      } else {
+        result = await createPost(postData, token);
+        console.log('✅ 글쓰기 응답:', JSON.stringify(result, null, 2));
+      }
       navigation.goBack();
     } catch (error) {
-      console.log('❌ 글쓰기 실패 상태 코드:', error.response?.status);
+      console.log('❌ 처리 실패 상태 코드:', error.response?.status);
       if (error.response?.status === 403) {
-        Alert.alert('권한 에러', '서버 보안 설정(403)으로 인해 등록이 거부되었습니다.');
+        Alert.alert('권한 에러', '수정/등록 권한이 없습니다.');
       } else {
-        Alert.alert('에러', '게시글 등록 중 문제가 발생했습니다.');
+        Alert.alert('에러', '작업 중 문제가 발생했습니다.');
       }
     } finally {
       setIsSubmitting(false);
@@ -63,7 +72,7 @@ export default function PostWrite() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ChevronLeft color="#333" size={28} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>글 작성</Text>
+        <Text style={styles.headerTitle}>{editPost ? '글 수정' : '글 작성'}</Text>
         <TouchableOpacity onPress={handleSave} disabled={isSubmitting}>
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#5AA9E6" />

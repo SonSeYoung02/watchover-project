@@ -42,10 +42,46 @@ const SectionHeader = ({ title }) => (
   </View>
 );
 
+const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
+
+const getTodayString = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const dateToString = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const getWeekDays = () => {
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+};
+
+const getStreak = (dates) => {
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    if (dates.includes(dateToString(d))) streak++;
+    else break;
+  }
+  return streak;
+};
+
 const MainHome = () => {
   const navigation = useNavigation();
   const [userName, setUserName] = useState('');
   const [quotes, setQuotes] = useState([]);
+  const [attendedDates, setAttendedDates] = useState([]);
+  const [isCheckedToday, setIsCheckedToday] = useState(false);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -84,9 +120,34 @@ const MainHome = () => {
       }
     };
 
+    const loadAttendance = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('attendance');
+        const dates = stored ? JSON.parse(stored) : [];
+        setAttendedDates(dates);
+        setIsCheckedToday(dates.includes(getTodayString()));
+      } catch (error) {
+        console.error('출석 데이터 로드 실패:', error);
+      }
+    };
+
     fetchUserInfo();
     fetchQuotes();
+    loadAttendance();
   }, []);
+
+  const handleCheckIn = async () => {
+    if (isCheckedToday) return;
+    const todayStr = getTodayString();
+    const newDates = [...attendedDates, todayStr];
+    try {
+      await AsyncStorage.setItem('attendance', JSON.stringify(newDates));
+      setAttendedDates(newDates);
+      setIsCheckedToday(true);
+    } catch (error) {
+      console.error('출석 체크 저장 실패:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -117,7 +178,56 @@ const MainHome = () => {
           </View>
         </View>
 
-        {/* ── 섹션 2: 오늘의 명언 ── */}
+        {/* ── 섹션 2: 출석 체크 ── */}
+        <View style={styles.section}>
+          <SectionHeader title="출석 체크" />
+          <View style={styles.attendanceWeekRow}>
+            {getWeekDays().map((day, i) => {
+              const dateStr = dateToString(day);
+              const todayStr = getTodayString();
+              const isToday = dateStr === todayStr;
+              const attended = attendedDates.includes(dateStr);
+              const isFuture = dateStr > todayStr;
+              return (
+                <View key={i} style={styles.attendanceDayCol}>
+                  <Text style={styles.attendanceDayLabel}>{DAY_LABELS[i]}</Text>
+                  <View style={[
+                    styles.attendanceDot,
+                    attended && styles.attendanceDotDone,
+                    isToday && !attended && styles.attendanceDotToday,
+                    isFuture && styles.attendanceDotFuture,
+                  ]}>
+                    {attended
+                      ? <Text style={styles.attendanceCheck}>✓</Text>
+                      : <Text style={[styles.attendanceDateNum, isFuture && styles.attendanceDateNumFuture]}>
+                          {day.getDate()}
+                        </Text>
+                    }
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          <View style={styles.attendanceFooter}>
+            {getStreak(attendedDates) > 0 && (
+              <Text style={styles.streakText}>
+                🔥 {getStreak(attendedDates)}일 연속 출석 중
+              </Text>
+            )}
+            <TouchableOpacity
+              style={[styles.checkInBtn, isCheckedToday && styles.checkInBtnDone]}
+              onPress={handleCheckIn}
+              activeOpacity={isCheckedToday ? 1 : 0.8}
+            >
+              <Text style={[styles.checkInBtnText, isCheckedToday && styles.checkInBtnTextDone]}>
+                {isCheckedToday ? '오늘 출석 완료 ✓' : '오늘 출석하기'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── 섹션 3: 오늘의 명언 ── */}
         <View style={styles.section}>
           <SectionHeader title="오늘의 명언" />
           <View style={styles.swiperContainer}>
@@ -158,7 +268,7 @@ const MainHome = () => {
           </View>
         </View>
 
-        {/* ── 섹션 3: 빠른 메뉴 ── */}
+        {/* ── 섹션 4: 빠른 메뉴 ── */}
         <View style={styles.section}>
           <SectionHeader title="지금 바로 시작해요" />
           <View style={styles.actionSection}>
@@ -194,7 +304,7 @@ const MainHome = () => {
           </View>
         </View>
 
-        {/* ── 섹션 4: 배너 ── */}
+        {/* ── 섹션 5: 배너 ── */}
         <View style={styles.section}>
           <SectionHeader title="마음 돌봄" />
           <View style={styles.bannerCard}>
@@ -401,6 +511,83 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#94A3B8',
     marginTop: 2,
+  },
+
+  /* Attendance */
+  attendanceWeekRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  attendanceDayCol: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  attendanceDayLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  attendanceDot: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EEF3F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  attendanceDotDone: {
+    backgroundColor: '#5AA9E6',
+  },
+  attendanceDotToday: {
+    backgroundColor: '#EAF4FD',
+    borderWidth: 2,
+    borderColor: '#5AA9E6',
+  },
+  attendanceDotFuture: {
+    backgroundColor: '#F4F8FC',
+  },
+  attendanceCheck: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  attendanceDateNum: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5AA9E6',
+  },
+  attendanceDateNumFuture: {
+    color: '#C8D8E8',
+  },
+  attendanceFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  streakText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+    flex: 1,
+  },
+  checkInBtn: {
+    backgroundColor: '#5AA9E6',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  checkInBtnDone: {
+    backgroundColor: '#EAF4FD',
+  },
+  checkInBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  checkInBtnTextDone: {
+    color: '#5AA9E6',
   },
 
   /* Banner */
