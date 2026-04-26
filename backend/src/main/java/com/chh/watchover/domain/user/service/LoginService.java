@@ -1,5 +1,6 @@
 package com.chh.watchover.domain.user.service;
 
+import com.chh.watchover.domain.character.repository.CharacterProfileRepository;
 import com.chh.watchover.domain.user.model.dto.*;
 import com.chh.watchover.global.security.JwtTokenProvider;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
@@ -16,12 +17,14 @@ public class LoginService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final CharacterProfileRepository characterProfileRepository;
 
     @Autowired
-    public LoginService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider) {
+    public LoginService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider, CharacterProfileRepository characterProfileRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.characterProfileRepository = characterProfileRepository;
     }
 
     /**
@@ -51,7 +54,10 @@ public class LoginService {
     public SearchResponseDto userSearch(String userId) {
         UserEntity user = userRepository.findByLoginId(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        return SearchResponseDto.from(user);
+        String characterImage = characterProfileRepository.findByUserUserId(user.getUserId())
+                .map(c -> c.getImage())
+                .orElse(null);
+        return SearchResponseDto.from(user, characterImage);
     }
 
     /**

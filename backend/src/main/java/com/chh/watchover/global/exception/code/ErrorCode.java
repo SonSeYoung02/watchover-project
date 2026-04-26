@@ -20,6 +20,9 @@ public enum ErrorCode {
     UNAUTHORIZED_USER("C005", "본인이 작성한 글이 아닙니다.", HttpStatus.FORBIDDEN),
     COMMENT_NOT_IN_POST("C006", "해당 게시물 안에 찾는 댓글이 없습니다.", HttpStatus.NOT_FOUND),
 
+    // ==================== Attendance ====================
+    ALREADY_CHECKED_IN("A001", "오늘 이미 출석 체크를 하셨습니다.", HttpStatus.CONFLICT),
+
     // ==================== Chatbot ====================
     OPENAI_API_ERROR("CB001", "OpenAI API 호출 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY),
 

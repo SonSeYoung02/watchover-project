@@ -35,7 +35,7 @@ public class LoginController {
         return ApiResponse.success(loginService.userRegister(userRegisterRequestDto));
     }
 
-    @Operation(summary = "유저 조회", description = "로그인한 유저의 본인 정보를 조회합니다.")
+    @Operation(summary = "유저 카드 조회", description = "로그인한 유저의 닉네임과 캐릭터 이미지를 반환합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
