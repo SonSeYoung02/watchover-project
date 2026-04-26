@@ -58,15 +58,18 @@ public class CommunityController {
         return ApiResponse.success(communityService.postUpdate(postUpdateRequestDto, loginId, postId));
     }
 
-    @Operation(summary = "게시물 삭제", description = "지정한 게시물을 삭제합니다.")
+    @Operation(summary = "게시물 삭제", description = "작성자 본인만 게시물을 삭제할 수 있습니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "게시물 삭제 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "삭제 권한 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시물 없음")
     })
     @DeleteMapping("/post/{postId}")
     public ApiResponse<Void> postDelete(
-            @Parameter(description = "삭제할 게시물 ID", required = true) @PathVariable Long postId) {
-        communityService.postDelete(postId);
+            @Parameter(description = "삭제할 게시물 ID", required = true) @PathVariable Long postId,
+            Principal principal) {
+        communityService.postDelete(postId, principal.getName());
         return ApiResponse.success(null);
     }
 
@@ -151,17 +154,18 @@ public class CommunityController {
         return ApiResponse.success(communityService.commentEdit(commentEditRequestDto, postId, commentId, loginId));
     }
 
-    @Operation(summary = "댓글 전체 조회", description = "최신순으로 페이징된 전체 댓글 목록을 반환합니다.")
+    @Operation(summary = "내 댓글 조회", description = "로그인된 유저가 작성한 댓글 목록을 최신순으로 반환합니다.")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
     })
     @GetMapping("/comment")
     public ApiResponse<ListCommentPageResponseDto> listComment(
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") @Min(0) int page,
-            @Parameter(description = "페이지당 댓글 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
-    ) {
+            @Parameter(description = "페이지당 댓글 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size,
+            Principal principal) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return ApiResponse.success(communityService.listComment(pageable));
+        return ApiResponse.success(communityService.listComment(principal.getName(), pageable));
     }
 
     @Operation(summary = "내가 작성한 게시물 조회", description = "로그인된 유저가 작성한 게시물 목록을 최신순으로 반환합니다.")
