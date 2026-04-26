@@ -94,9 +94,12 @@ public class CommunityService {
      * @throws CustomException POST_NOT_FOUND
      */
     @Transactional
-    public void postDelete(Long postId) {
+    public void postDelete(Long postId, String loginId) {
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        if (!post.getUser().getLoginId().equals(loginId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN_ACCESS);
+        }
         postRepository.delete(post);
     }
 
@@ -226,8 +229,10 @@ public class CommunityService {
      * @param pageable 페이지 정보 (page, size, sort)
      * @return 페이징된 댓글 목록 DTO
      */
-    public ListCommentPageResponseDto listComment(Pageable pageable) {
-        Page<CommentEntity> commentPage = commentRepository.findAll(pageable);
+    public ListCommentPageResponseDto listComment(String loginId, Pageable pageable) {
+        userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        Page<CommentEntity> commentPage = commentRepository.findByUser_LoginId(loginId, pageable);
         return ListCommentPageResponseDto.from(commentPage);
     }
 
