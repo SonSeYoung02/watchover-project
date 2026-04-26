@@ -164,6 +164,48 @@ public class CommunityController {
         return ApiResponse.success(communityService.listComment(pageable));
     }
 
+    @Operation(summary = "내가 작성한 게시물 조회", description = "로그인된 유저가 작성한 게시물 목록을 최신순으로 반환합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @GetMapping("/my/post")
+    public ApiResponse<ListPostPageResponseDto> myPostList(
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "페이지당 게시물 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size,
+            Principal principal) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return ApiResponse.success(communityService.myPostList(principal.getName(), pageable));
+    }
+
+    @Operation(summary = "내가 작성한 댓글 조회", description = "로그인된 유저가 작성한 댓글 목록을 최신순으로 반환합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @GetMapping("/my/comment")
+    public ApiResponse<ListCommentPageResponseDto> myCommentList(
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "페이지당 댓글 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size,
+            Principal principal) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return ApiResponse.success(communityService.myCommentList(principal.getName(), pageable));
+    }
+
+    @Operation(summary = "내가 북마크한 게시물 조회", description = "로그인된 유저가 북마크한 게시물 목록을 반환합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @GetMapping("/bookmark/list")
+    public ApiResponse<BookmarkListPageResponseDto> myBookmarkList(
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "페이지당 게시물 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size,
+            Principal principal) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ApiResponse.success(communityService.myBookmarkList(principal.getName(), pageable));
+    }
+
     @Operation(summary = "북마크 토글", description = "북마크가 없으면 추가, 이미 있으면 취소합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "북마크 토글 성공"),

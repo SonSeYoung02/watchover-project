@@ -2,21 +2,16 @@ package com.chh.watchover.domain.user.model.dto;
 
 import com.chh.watchover.domain.user.model.entity.UserEntity;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import lombok.Builder;
-import lombok.Getter;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-@Getter
-@Builder
-@JsonPropertyOrder({"userId","nickname"})
-public class RegisterResponseDto {
-
-    private String userId;
-    private String nickname;
+@Schema(description = "회원가입 응답")
+@JsonPropertyOrder({"userId", "nickname"})
+public record RegisterResponseDto(
+        @Schema(description = "로그인 아이디") String userId,
+        @Schema(description = "닉네임") String nickname
+) {
 
     public static RegisterResponseDto from(UserEntity saveUser) {
-        return RegisterResponseDto.builder()
-                .userId(saveUser.getLoginId())
-                .nickname(saveUser.getNickname())
-                .build();
+        return new RegisterResponseDto(saveUser.getLoginId(), saveUser.getNickname());
     }
 }

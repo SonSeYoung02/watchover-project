@@ -2,19 +2,15 @@ package com.chh.watchover.domain.user.model.dto;
 
 import com.chh.watchover.domain.user.model.entity.UserEntity;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import lombok.*;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-@Getter
-@Builder
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Schema(description = "회원 탈퇴 응답")
 @JsonPropertyOrder({"userId"})
-public class UserDeleteResponseDto {
-    private Long userId;
+public record UserDeleteResponseDto(
+        @Schema(description = "탈퇴된 유저 ID") Long userId
+) {
 
     public static UserDeleteResponseDto from(UserEntity user) {
-        return UserDeleteResponseDto.builder()
-                .userId(user.getUserId())
-                .build();
+        return new UserDeleteResponseDto(user.getUserId());
     }
 }

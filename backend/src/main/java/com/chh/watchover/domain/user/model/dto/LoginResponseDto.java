@@ -1,19 +1,15 @@
 package com.chh.watchover.domain.user.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import lombok.Builder;
-import lombok.Getter;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-@Getter
-@Builder
+@Schema(description = "로그인 응답")
 @JsonPropertyOrder({"token"})
-public class LoginResponseDto {
-
-    private String token;
+public record LoginResponseDto(
+        @Schema(description = "JWT 액세스 토큰") String token
+) {
 
     public static LoginResponseDto from(String token) {
-        return LoginResponseDto.builder()
-                .token(token)
-                .build();
+        return new LoginResponseDto(token);
     }
 }

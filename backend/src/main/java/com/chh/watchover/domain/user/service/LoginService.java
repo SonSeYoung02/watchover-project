@@ -33,9 +33,9 @@ public class LoginService {
      * @throws CustomException DUPLICATE_ID / DUPLICATE_EMAIL
      */
     public RegisterResponseDto userRegister(RegisterRequestDto registerRequestDto) {
-        if (userRepository.existsByLoginId(registerRequestDto.getLoginId())) { throw new CustomException(ErrorCode.DUPLICATE_ID); }
-        if (userRepository.existsByEmail(registerRequestDto.getEmail())) { throw new CustomException(ErrorCode.DUPLICATE_EMAIL); }
-        String encodedPassword = passwordEncoder.encode(registerRequestDto.getLoginPw());
+        if (userRepository.existsByLoginId(registerRequestDto.loginId())) { throw new CustomException(ErrorCode.DUPLICATE_ID); }
+        if (userRepository.existsByEmail(registerRequestDto.email())) { throw new CustomException(ErrorCode.DUPLICATE_EMAIL); }
+        String encodedPassword = passwordEncoder.encode(registerRequestDto.loginPw());
         UserEntity user = UserEntity.of(registerRequestDto, encodedPassword);
         UserEntity saveUser = userRepository.save(user);
         return RegisterResponseDto.from(saveUser);
@@ -62,9 +62,9 @@ public class LoginService {
      * @throws CustomException USER_NOT_FOUND / LOGIN_FAILED
      */
     public LoginResponseDto userLogin(LoginRequestDto loginRequestDto) {
-        UserEntity user = userRepository.findByLoginId(loginRequestDto.getLoginId())
+        UserEntity user = userRepository.findByLoginId(loginRequestDto.loginId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        if (!user.getLoginId().equals(loginRequestDto.getLoginId()) || !passwordEncoder.matches(loginRequestDto.getLoginPw(), user.getLoginPw())) { throw new CustomException(ErrorCode.LOGIN_FAILED); }
+        if (!user.getLoginId().equals(loginRequestDto.loginId()) || !passwordEncoder.matches(loginRequestDto.loginPw(), user.getLoginPw())) { throw new CustomException(ErrorCode.LOGIN_FAILED); }
         String token = jwtTokenProvider.createToken(user.getLoginId());
         return LoginResponseDto.from(token);
     }
@@ -96,7 +96,7 @@ public class LoginService {
     public UserUpdateResponseDto userUpdate(UserUpdateRequestDto dto, String loginId) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        String encodedPw = passwordEncoder.encode(dto.getLoginPw());
+        String encodedPw = passwordEncoder.encode(dto.loginPw());
         UserEntity updateUser = user.userUpdate(dto, encodedPw);
         return UserUpdateResponseDto.from(updateUser);
     }

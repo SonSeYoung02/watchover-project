@@ -232,6 +232,36 @@ public class CommunityService {
     }
 
     /**
+     * 내가 작성한 게시물을 최신순으로 페이징하여 조회합니다.
+     */
+    public ListPostPageResponseDto myPostList(String loginId, Pageable pageable) {
+        userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        Page<PostEntity> postPage = postRepository.findByUser_LoginId(loginId, pageable);
+        return ListPostPageResponseDto.from(postPage);
+    }
+
+    /**
+     * 내가 작성한 댓글을 최신순으로 페이징하여 조회합니다.
+     */
+    public ListCommentPageResponseDto myCommentList(String loginId, Pageable pageable) {
+        userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        Page<CommentEntity> commentPage = commentRepository.findByUser_LoginId(loginId, pageable);
+        return ListCommentPageResponseDto.from(commentPage);
+    }
+
+    /**
+     * 내가 북마크한 게시물을 최신순으로 페이징하여 조회합니다.
+     */
+    public BookmarkListPageResponseDto myBookmarkList(String loginId, Pageable pageable) {
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        Page<BookmarkEntity> bookmarkPage = bookmarkRepository.findByUser_UserId(user.getUserId(), pageable);
+        return BookmarkListPageResponseDto.from(bookmarkPage);
+    }
+
+    /**
      * 게시물 북마크를 토글합니다.
      * 이미 북마크가 있으면 취소, 없으면 추가합니다.
      *
