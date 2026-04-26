@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import { ChevronLeft, Heart, Bookmark } from "lucide-react-native";
+import { ChevronLeft, Heart, Bookmark, MessageCircle } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -51,29 +51,45 @@ export default function UserActivityPage() {
     return dateStr.split("T")[0];
   };
 
-  const renderPostItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.postItem}
-      onPress={() => navigation.navigate("PostDetail", { id: item.postId })}
-      activeOpacity={0.85}
-    >
-      <View style={styles.titleRow}>
-        <Text style={styles.postTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-      </View>
+  const getCommentCount = (item) =>
+    item.commentCount ?? item.commentCnt ?? item.replyCount ?? 0;
 
-      <View style={styles.postFooterRow}>
-        <Text style={styles.authorMeta}>{formatDate(item.createdAt)}</Text>
-        <View style={styles.postStatsGroup}>
-          <View style={styles.statItem}>
-            <Heart size={13} color="#FF5A5F" />
-            <Text style={styles.statText}>{item.likeCount || 0}</Text>
+  const renderPostItem = ({ item }) => {
+    const commentCount = getCommentCount(item);
+    return (
+      <TouchableOpacity
+        style={styles.postItem}
+        onPress={() => navigation.navigate("PostDetail", { id: item.postId })}
+        activeOpacity={0.85}
+      >
+        <View style={styles.titleRow}>
+          <Text style={styles.postTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+        </View>
+
+        {!!item.content && (
+          <Text style={styles.postContentPreview} numberOfLines={1}>
+            {item.content}
+          </Text>
+        )}
+
+        <View style={styles.postFooterRow}>
+          <Text style={styles.authorMeta}>{formatDate(item.createdAt)}</Text>
+          <View style={styles.postStatsGroup}>
+            <View style={styles.statItem}>
+              <Heart size={13} color="#FF5A5F" />
+              <Text style={styles.statText}>{item.likeCount || 0}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <MessageCircle size={13} color="#5AA9E6" />
+              <Text style={styles.statText}>{commentCount}</Text>
+            </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderCommentItem = ({ item }) => (
     <TouchableOpacity
@@ -223,10 +239,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   postTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: "#111111",
-    flex: 1,
+    marginBottom: 3,
+  },
+  postContentPreview: {
+    fontSize: 13,
+    color: "#999999",
+    lineHeight: 18,
+    marginBottom: 8,
   },
   postFooterRow: {
     flexDirection: "row",
