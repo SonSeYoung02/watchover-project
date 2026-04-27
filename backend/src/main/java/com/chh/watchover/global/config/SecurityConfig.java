@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -59,6 +60,13 @@ public class SecurityConfig {
                 .csrf(CsrfConfigurer<HttpSecurity>::disable)
                 .sessionManagement(sessionManagement ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"code\":\"U004\",\"message\":\"인증이 필요합니다.\",\"data\":null}");
+                        })
+                )
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/api/user/login").permitAll()
                         .requestMatchers("/api/user/register").permitAll()

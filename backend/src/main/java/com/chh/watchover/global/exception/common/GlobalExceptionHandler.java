@@ -3,6 +3,7 @@ package com.chh.watchover.global.exception.common;
 import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.global.exception.CustomException;
 import com.chh.watchover.global.exception.code.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -58,6 +60,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleException(Exception e) {
+        log.error("[UNHANDLED EXCEPTION] {}: {}", e.getClass().getSimpleName(), e.getMessage(), e);
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
                 .body(ApiResponse.fail(ErrorCode.INTERNAL_SERVER_ERROR));

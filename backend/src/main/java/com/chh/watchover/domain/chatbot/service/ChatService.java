@@ -1,6 +1,8 @@
 package com.chh.watchover.domain.chatbot.service;
 
 import com.chh.watchover.domain.user.repository.UserRepository;
+import com.chh.watchover.global.exception.CustomException;
+import com.chh.watchover.global.exception.code.ErrorCode;
 import com.chh.watchover.domain.chatbot.model.dto.ChatResponse;
 import com.chh.watchover.domain.chatbot.model.entity.ChatRoomEntity;
 import com.chh.watchover.domain.chatbot.model.entity.MessageEntity;
@@ -52,7 +54,7 @@ public class ChatService {
     @Transactional
     public ChatResponse getChatResponse(String loginId, Long chatRoomId, String promptFile, String userMessage) {
         UserEntity user = userRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         // 1. 채팅방 존재 확인 및 없으면 자동 생성
         ChatRoomEntity chatRoom = chatRoomRepository.findById(chatRoomId)
