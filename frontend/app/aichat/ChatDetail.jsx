@@ -1,8 +1,9 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ChevronLeft, Lock } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   ScrollView,
   StatusBar,
@@ -10,42 +11,77 @@ import {
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getChatDetail } from '../api/chatApi'; // 함수 임포트
+
+import { getChatDetail } from '../api/chatApi';
+
+const normalizeChatLogs = (chatLogs) => {
+  const normalizedLogs = [];
+
+  chatLogs.forEach((log) => {
+    const role = String(log.role || log.type || '').toLowerCase();
+    const text = log.answer || log.text || log.message;
+
+    if (!text) {
+      return;
+    }
+
+    if (role === 'user') {
+      normalizedLogs.push({ type: 'user', text });
+      return;
+    }
+
+    if (role === 'assistant' || role === 'ai') {
+      normalizedLogs.push({ type: 'ai', text });
+      return;
+    }
+
+    if (log.message) {
+      normalizedLogs.push({ type: 'user', text: log.message });
+    }
+    if (log.answer) {
+      normalizedLogs.push({ type: 'ai', text: log.answer });
+    }
+  });
+
+  return normalizedLogs;
+};
 
 const ChatDetail = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { id } = route.params || {}; 
+  const { id } = route.params || {};
   const [chatLogs, setChatLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const normalizedLogs = useMemo(() => normalizeChatLogs(chatLogs), [chatLogs]);
 
   useEffect(() => {
     const fetchDetail = async () => {
       try {
         setIsLoading(true);
-        const token = await AsyncStorage.getItem("userToken");
+        const token = await AsyncStorage.getItem('userToken');
         if (!token) {
-          console.warn("토큰이 없습니다.");
+          console.warn('토큰이 없습니다.');
           return;
         }
-        
-        // API 함수 호출 방식으로 변경
+
         const result = await getChatDetail(id, token);
-        
+
         if (result && result.data) {
-          // 서버 데이터 구조에 맞춰 저장
-          const logs = Array.isArray(result.data) ? result.data : (result.data.chatLogs || []);
+          const logs = Array.isArray(result.data)
+            ? result.data
+            : result.data.chatLogs || [];
           setChatLogs(logs);
         }
       } catch (error) {
-        console.error('상세 내역 로드 실패:', error);
+        console.error('상담 상세 내역 로드 실패:', error);
       } finally {
         setIsLoading(false);
       }
     };
+
     if (id) fetchDetail();
   }, [id]);
 
@@ -68,32 +104,36 @@ const ChatDetail = () => {
             <Text style={styles.dateText}>대화 기록 (ID: {id})</Text>
           </View>
 
-          {(() => {
-            // Нормализация 데이터
-            let normalizedLogs = [];
-            chatLogs.forEach(log => {
-              if (log.type === 'user' || log.type === 'ai') {
-                normalizedLogs.push(log);
-              } else {
-                // If it's a combined object like { message: "...", answer: "..." }
-                if (log.message) normalizedLogs.push({ type: 'user', text: log.message });
-                if (log.answer) normalizedLogs.push({ type: 'ai', text: log.answer });
-              }
-            });
-            
-            return normalizedLogs.map((log, index) => (
-              <View key={index} style={[styles.messageRow, log.type === 'ai' ? styles.aiRow : styles.userRow]}>
-                {log.type === 'ai' && (
-                  <View style={styles.aiAvatar}><Text style={styles.avatarText}>AI</Text></View>
-                )}
-                <View style={[styles.bubble, log.type === 'ai' ? styles.aiBubble : styles.userBubble]}>
-                  <Text style={[styles.messageText, log.type === 'ai' ? styles.aiText : styles.userText]}>
-                    {log.text || log.message || log.answer}
-                  </Text>
+          {normalizedLogs.map((log, index) => (
+            <View
+              key={index}
+              style={[
+                styles.messageRow,
+                log.type === 'ai' ? styles.aiRow : styles.userRow,
+              ]}
+            >
+              {log.type === 'ai' && (
+                <View style={styles.aiAvatar}>
+                  <Text style={styles.avatarText}>AI</Text>
                 </View>
+              )}
+              <View
+                style={[
+                  styles.bubble,
+                  log.type === 'ai' ? styles.aiBubble : styles.userBubble,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.messageText,
+                    log.type === 'ai' ? styles.aiText : styles.userText,
+                  ]}
+                >
+                  {log.text}
+                </Text>
               </View>
-            ));
-          })()}
+            </View>
+          ))}
         </ScrollView>
       )}
 
@@ -143,9 +183,15 @@ const styles = StyleSheet.create({
   userRow: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
 
   aiAvatar: {
-    width: 38, height: 38, backgroundColor: '#E0F2FE', borderRadius: 14,
-    justifyContent: 'center', alignItems: 'center', marginRight: 10,
-    borderWidth: 1, borderColor: '#BAE6FD',
+    width: 38,
+    height: 38,
+    backgroundColor: '#E0F2FE',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
   },
   avatarText: { fontSize: 11, fontWeight: '800', color: '#0EA5E9' },
 
@@ -154,7 +200,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     borderRadius: 22,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 5 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+      },
       android: { elevation: 1 },
     }),
   },
@@ -188,7 +239,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    gap: 8
+    gap: 8,
   },
   footerText: { fontSize: 13, fontWeight: '700', color: '#64748B' },
 });

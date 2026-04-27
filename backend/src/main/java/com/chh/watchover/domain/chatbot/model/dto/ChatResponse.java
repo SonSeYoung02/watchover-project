@@ -14,6 +14,10 @@ import lombok.NoArgsConstructor;
 public class ChatResponse {
     @Schema(description = "채팅방 ID")
     private Long chatRoomId;
-    @Schema(description = "AI 답변 내용")
+
+    @Schema(description = "메시지 작성자 역할", example = "user")
+    private String role;
+
+    @Schema(description = "메시지 내용")
     private String answer;
 }

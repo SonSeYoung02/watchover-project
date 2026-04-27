@@ -113,6 +113,7 @@ public class ChatService {
         // 7. 결과 반환 (ChatResponse DTO 및 Builder 사용) ✅
         return ChatResponse.builder()
                 .chatRoomId(chatRoom.getChatRoomId()) // DB에서 생성/조회된 방 ID 세팅
+                .role(Role.assistant.name())
                 .answer(gptAnswer)                   // GPT 답변 세팅
                 .build();
 
@@ -133,6 +134,7 @@ public class ChatService {
         return messages.stream()
                 .map(msg -> ChatResponse.builder()
                         .chatRoomId(chatRoomId)
+                        .role(msg.getRole().name())
                         .answer(stripSpeakerPrefix(msg.getContent())) // DB에 저장된 메시지 내용
                         .build())
                 .collect(Collectors.toList());

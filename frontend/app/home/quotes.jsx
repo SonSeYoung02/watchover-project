@@ -30,8 +30,8 @@ const QuoteList = () => {
         if (result && result.code === "SUCCESS" && result.data) {
           // 서버에서 받은 배열 데이터를 UI에 맞게 변환
           const formattedData = result.data.map((item, index) => ({
-            id: item.id || index,
-            text: item.message || '내용이 없습니다.',
+            id: item.bannerId || index,
+            text: item.content || '내용이 없습니다.',
             author: item.author || 'Care AI',
             // 카드마다 색상을 다르게 주기 위한 로직
             bgColor: index % 3 === 0 ? '#5AA9E6' : index % 3 === 1 ? '#7BBCEB' : '#A3D1F1'

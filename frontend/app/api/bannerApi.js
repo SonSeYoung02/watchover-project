@@ -5,18 +5,18 @@ import client from './client';
  */
 export const getBannerList = async () => {
   try {
-    const response = await client.get('/api/banners/list'); // 팀원이 만들어줄 주소
-    return response.data; // { code: "SUCCESS", data: [{ message: "...", author: "..." }, ...] }
+    const response = await client.get('/api/banners');
+    return response.data;
   } catch (error) {
-    console.error("명언 목록 로드 에러:", error);
+    console.error('배너 목록 로드 에러:', error);
     throw error;
   }
 };
 
 /**
- * 기존 개별 조회 (필요시 유지)
+ * 배너 단건 조회 API
  */
-export const getBannerDetail = async (banner_id) => {
-  const response = await client.get(`/api/banners/${banner_id}`);
+export const getBannerDetail = async (bannerId) => {
+  const response = await client.get(`/api/banners/${bannerId}`);
   return response.data;
 };

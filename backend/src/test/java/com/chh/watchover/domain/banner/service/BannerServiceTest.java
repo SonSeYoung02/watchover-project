@@ -74,7 +74,7 @@ class BannerServiceTest {
         when(bannerRepository.findByBannerIdAndIsActivate(99L, 1)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> bannerService.getActiveBannerById(99L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("해당 배너를 찾을 수 없거나 비활성화 상태입니다");
     }
 

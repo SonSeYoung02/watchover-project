@@ -1,8 +1,8 @@
 package com.chh.watchover.domain.banner.controller;
 
-import com.chh.watchover.global.common.ApiResponse;
 import com.chh.watchover.domain.banner.model.dto.BannerResponseDto;
 import com.chh.watchover.domain.banner.service.BannerService;
+import com.chh.watchover.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
 
 @Tag(name = "Banner", description = "배너 조회 API")
@@ -31,6 +32,11 @@ public class BannerController {
     public ResponseEntity<ApiResponse<List<BannerResponseDto>>> getBanners() {
         List<BannerResponseDto> activeBanners = bannerService.getActiveBanners();
         return ResponseEntity.ok(ApiResponse.success(activeBanners));
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<ApiResponse<List<BannerResponseDto>>> getBannerList() {
+        return getBanners();
     }
 
     @Operation(summary = "배너 단건 조회", description = "특정 ID에 해당하는 활성 배너 단건을 조회합니다.")

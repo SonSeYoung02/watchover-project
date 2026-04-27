@@ -108,8 +108,8 @@ const MainHome = () => {
         const result = await getBannerList();
         if (result && result.code === "SUCCESS" && result.data) {
           const formattedQuotes = result.data.map((item, index) => ({
-            id: item.id || index,
-            text: item.message || '소중한 하루 보내세요.',
+            id: item.bannerId || index,
+            text: item.content || '소중한 하루 보내세요.',
             author: item.author || 'Care AI',
             accent: index % 2 === 0 ? '#5AA9E6' : '#7BBCEB',
           }));
