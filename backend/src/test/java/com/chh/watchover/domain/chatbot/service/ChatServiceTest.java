@@ -86,6 +86,8 @@ class ChatServiceTest {
         List<ChatResponse> result = chatService.getChatHistory(1L);
 
         assertThat(result).hasSize(2);
+        assertThat(result.get(0).getRole()).isEqualTo(Role.user.name());
+        assertThat(result.get(1).getRole()).isEqualTo(Role.assistant.name());
         assertThat(result.get(0).getAnswer()).isEqualTo("안녕하세요");
         assertThat(result.get(1).getAnswer()).isEqualTo("안녕하세요! 무엇을 도와드릴까요?");
     }
