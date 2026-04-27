@@ -105,12 +105,17 @@ const MainHome = () => {
 
     const fetchQuotes = async () => {
       try {
-        const result = await getBannerList();
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          console.warn('token이 없습니다. 명언 목록을 불러오지 않습니다.');
+          return;
+        }
+
+        const result = await getBannerList(token);
         if (result && result.code === "SUCCESS" && result.data) {
           const formattedQuotes = result.data.map((item, index) => ({
             id: item.bannerId || index,
             text: item.content || '소중한 하루 보내세요.',
-            author: item.author || 'Care AI',
             accent: index % 2 === 0 ? '#5AA9E6' : '#7BBCEB',
           }));
           setQuotes(formattedQuotes);
@@ -243,26 +248,33 @@ const MainHome = () => {
                 loop
               >
                 {quotes.map((quote) => (
-                  <View key={quote.id} style={[styles.slide, { backgroundColor: quote.accent }]}>
+                  <TouchableOpacity
+                    key={quote.id}
+                    style={[styles.slide, { backgroundColor: quote.accent }]}
+                    onPress={() => navigation.navigate('Quotes')}
+                    activeOpacity={0.9}
+                  >
                     <View style={styles.quoteIconWrap}>
                       <Quote size={20} color="rgba(255,255,255,0.6)" />
                     </View>
-                    <Text style={styles.quoteText}>{quote.text}</Text>
-                    <Text style={styles.quoteAuthor}>— {quote.author}</Text>
-                    <TouchableOpacity
-                      onPress={() => navigation.navigate('Quotes')}
-                      style={styles.viewAllBtn}
-                      activeOpacity={0.7}
+                    <Text
+                      style={styles.quoteText}
+                      numberOfLines={4}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}
                     >
+                      {quote.text}
+                    </Text>
+                    <View style={styles.viewAllBtn}>
                       <Text style={styles.viewAllText}>명언 더보기</Text>
                       <ChevronRight size={13} color="rgba(255,255,255,0.9)" />
-                    </TouchableOpacity>
-                  </View>
+                    </View>
+                  </TouchableOpacity>
                 ))}
               </Swiper>
             ) : (
-              <View style={[styles.slide, { backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' }]}>
-                 <Text style={{ color: '#94A3B8' }}>명언을 불러오는 중입니다...</Text>
+              <View style={[styles.slide, styles.emptyQuoteSlide]}>
+                 <Text style={styles.emptyQuoteText}>명언을 불러오는 중입니다...</Text>
               </View>
             )}
           </View>
@@ -437,34 +449,36 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
   },
-  swiper: {},
+  swiper: {
+    height: 220,
+  },
   slide: {
-    flex: 1,
+    height: 220,
     paddingHorizontal: 26,
-    paddingTop: 26,
-    paddingBottom: 40,
-    justifyContent: 'center',
+    paddingTop: 22,
+    paddingBottom: 38,
+    justifyContent: 'flex-start',
   },
   quoteIconWrap: {
-    marginBottom: 12,
+    height: 24,
+    marginBottom: 8,
   },
   quoteText: {
     fontSize: 16,
-    lineHeight: 26,
+    lineHeight: 24,
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 12,
-  },
-  quoteAuthor: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.85)',
-    fontWeight: '500',
+    minHeight: 72,
+    maxHeight: 96,
+    marginBottom: 8,
+    includeFontPadding: false,
   },
   viewAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 12,
     gap: 3,
+    alignSelf: 'flex-start',
   },
   viewAllText: {
     fontSize: 12,
@@ -476,6 +490,16 @@ const styles = StyleSheet.create({
   },
   activeDot: {
     width: 18, height: 6, borderRadius: 3, backgroundColor: '#ffffff',
+  },
+  emptyQuoteSlide: {
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyQuoteText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   /* Action Cards */

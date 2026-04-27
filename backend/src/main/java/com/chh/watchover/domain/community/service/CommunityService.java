@@ -100,6 +100,9 @@ public class CommunityService {
         if (!post.getUser().getLoginId().equals(loginId)) {
             throw new CustomException(ErrorCode.FORBIDDEN_ACCESS);
         }
+        likeRepository.deleteByPost_PostId(postId);
+        bookmarkRepository.deleteByPost_PostId(postId);
+        commentRepository.deleteByPost_PostId(postId);
         postRepository.delete(post);
     }
 

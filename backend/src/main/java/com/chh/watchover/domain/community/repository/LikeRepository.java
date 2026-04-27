@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface LikeRepository extends JpaRepository<LikeEntity, Long> {
     Optional<LikeEntity> findByUser_UserIdAndPost_PostId(Long userId, Long postId);
+
+    void deleteByPost_PostId(Long postId);
 }

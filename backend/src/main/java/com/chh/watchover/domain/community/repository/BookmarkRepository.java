@@ -11,4 +11,6 @@ import java.util.Optional;
 public interface BookmarkRepository extends JpaRepository<BookmarkEntity, Long> {
     Optional<BookmarkEntity> findByUser_userIdAndPost_postId(Long userId, Long postId);
     Page<BookmarkEntity> findByUser_UserId(Long userId, Pageable pageable);
+
+    void deleteByPost_PostId(Long postId);
 }

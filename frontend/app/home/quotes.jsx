@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Platform,
   ScrollView,
@@ -25,14 +26,19 @@ const QuoteList = () => {
       try {
         setIsLoading(true);
         // ✅ 변경: 직접 호출 대신 미리 만들어둔 전체 목록 API 함수 사용
-        const result = await getBannerList(); 
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          console.warn('token이 없습니다. 명언 목록을 불러오지 않습니다.');
+          return;
+        }
+
+        const result = await getBannerList(token); 
         
         if (result && result.code === "SUCCESS" && result.data) {
           // 서버에서 받은 배열 데이터를 UI에 맞게 변환
           const formattedData = result.data.map((item, index) => ({
             id: item.bannerId || index,
             text: item.content || '내용이 없습니다.',
-            author: item.author || 'Care AI',
             // 카드마다 색상을 다르게 주기 위한 로직
             bgColor: index % 3 === 0 ? '#5AA9E6' : index % 3 === 1 ? '#7BBCEB' : '#A3D1F1'
           }));
@@ -79,8 +85,14 @@ const QuoteList = () => {
                 <View style={styles.quoteTagContainer}>
                   <Text style={styles.quoteTagText}>명언</Text>
                 </View>
-                <Text style={styles.quoteText}>{quote.text}</Text>
-                <Text style={styles.quoteAuthor}>- {quote.author} -</Text>
+                <Text
+                  style={styles.quoteText}
+                  numberOfLines={5}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                >
+                  {quote.text}
+                </Text>
               </View>
             ))
           ) : (
@@ -127,10 +139,10 @@ const styles = StyleSheet.create({
   },
   quoteListCard: {
     borderRadius: 20,
-    paddingVertical: 30,
+    paddingVertical: 24,
     paddingHorizontal: 20,
-    minHeight: 160,
-    justifyContent: 'center',
+    height: 188,
+    justifyContent: 'flex-start',
     alignItems: 'center',
     ...Platform.select({
       ios: {
@@ -147,7 +159,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 3,
     borderRadius: 15,
-    marginBottom: 15,
+    marginBottom: 12,
+    height: 22,
+    justifyContent: 'center',
   },
   quoteTagText: {
     fontSize: 10,
@@ -157,14 +171,12 @@ const styles = StyleSheet.create({
   quoteText: {
     fontSize: 15,
     fontWeight: '700',
-    lineHeight: 24,
+    lineHeight: 22,
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 10,
-  },
-  quoteAuthor: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
+    width: '100%',
+    height: 110,
+    marginBottom: 8,
+    includeFontPadding: false,
   },
 });

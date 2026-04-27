@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -196,7 +198,11 @@ class CommunityServiceTest {
 
         communityService.postDelete(1L, "testuser");
 
-        verify(postRepository).delete(post);
+        InOrder inOrder = inOrder(likeRepository, bookmarkRepository, commentRepository, postRepository);
+        inOrder.verify(likeRepository).deleteByPost_PostId(1L);
+        inOrder.verify(bookmarkRepository).deleteByPost_PostId(1L);
+        inOrder.verify(commentRepository).deleteByPost_PostId(1L);
+        inOrder.verify(postRepository).delete(post);
     }
 
     @Test

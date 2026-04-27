@@ -12,4 +12,6 @@ import java.util.List;
 public interface CommentRepository extends JpaRepository<CommentEntity, Long> {
     List<CommentEntity> findByPost_PostIdOrderByCreatedAtAsc(Long postId);
     Page<CommentEntity> findByUser_LoginId(String loginId, Pageable pageable);
+
+    void deleteByPost_PostId(Long postId);
 }
