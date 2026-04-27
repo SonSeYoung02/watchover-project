@@ -1,0 +1,11 @@
+spring:
+  config:
+    import: "optional:file:.env.dev[.properties]"
+  datasource:
+    url: "jdbc:mysql://${DB_URL_DEV}:${DB_PORT_DEV}/${DB_NAME_DEV}?serverTimezone=Asia/Seoul"
+    username: "${DB_USERNAME_DEV}"
+    password: "${DB_PASSWORD_DEV}"
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true

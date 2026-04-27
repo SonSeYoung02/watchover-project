@@ -1,0 +1,9 @@
+spring:
+  config:
+    import: "optional:file:.env.prod[.properties]"
+
+server:
+  port: "${PROD_SERVER_PORT}"
+  serverAddress: "${SERVER_IP}"
+
+serverName: prod_server

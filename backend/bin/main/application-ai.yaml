@@ -1,0 +1,6 @@
+spring:
+  config:
+    import: "optional:file:.env.prod[.properties]"
+  openai:
+    api:
+      key: ${OPENAI_API_KEY}
