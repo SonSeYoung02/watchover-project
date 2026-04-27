@@ -18,7 +18,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  startChatRoom,
   sendChatMessage,
   finishAndSummarize,
 } from "../api/chatApi";
@@ -138,30 +137,33 @@ const AiChat = () => {
   // 1. 메시지 전송 함수
   const handleSend = async () => {
     if (!input.trim() || isWaiting) return;
+    if (!userToken) {
+      Alert.alert("알림", "로그인이 필요합니다.");
+      return;
+    }
 
-    const userMsg = { id: Date.now(), type: "user", text: input };
+    const currentInput = input.trim();
+    const userMsg = { id: Date.now(), type: "user", text: currentInput };
     setMessages((prev) => [...prev, userMsg]);
-    const currentInput = input;
     setInput("");
     setIsWaiting(true);
 
     try {
-      let roomId = currentRoomId;
+      const roomId = currentRoomId || 0;
 
-      // 방이 없으면 생성
-      if (!roomId) {
-        const roomRes = await startChatRoom(userToken);
-        roomId = roomRes.data.chatRoomId;
-        setCurrentRoomId(roomId);
-      }
-
-      // 메시지 전송
       const response = await sendChatMessage(roomId, currentInput, userToken);
 
       if (response && response.data) {
+        if (response.data.chatRoomId) {
+          setCurrentRoomId(response.data.chatRoomId);
+        }
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 1, type: "ai", text: response.data.answer },
+          {
+            id: Date.now() + 1,
+            type: "ai",
+            text: response.data.answer || "답변을 불러오지 못했습니다.",
+          },
         ]);
       }
     } catch (error) {

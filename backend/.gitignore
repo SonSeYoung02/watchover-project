@@ -189,5 +189,42 @@ mcp_config.json
 *.env.dev
 *.env.prod
 
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Spring Boot local overrides
+application-local.yml
+application-local.yaml
+application-*.local.yml
+application-*.local.yaml
+
+# Credentials and certificates
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.jks
+*.keystore
+service-account*.json
+firebase-*.json
+aws-credentials*
+
+# Runtime files
+logs/
+*.pid
+*.seed
+*.dump
+
+# Local uploads and temporary storage
+uploads/
+tmp/
+temp/
+
 # QueryDSL 설정
 /generated
+
