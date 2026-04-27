@@ -3,6 +3,8 @@ package com.chh.watchover.domain.banner.service;
 import com.chh.watchover.domain.banner.model.dto.BannerResponseDto;
 import com.chh.watchover.domain.banner.model.entity.BannerEntity;
 import com.chh.watchover.domain.banner.repository.BannerRepository;
+import com.chh.watchover.global.exception.CustomException;
+import com.chh.watchover.global.exception.code.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +37,7 @@ public class BannerService {
      */
     public BannerResponseDto getActiveBannerById(Long id) {
         BannerEntity bannerEntity = bannerRepository.findByBannerIdAndIsActivate(id, 1)
-                .orElseThrow(() -> new IllegalArgumentException("해당 배너를 찾을 수 없거나 비활성화 상태입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.BANNER_NOT_FOUND));
 
         return BannerResponseDto.from(bannerEntity);
     }

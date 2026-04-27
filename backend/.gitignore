@@ -171,6 +171,7 @@ gradle-app.setting
 .claude_settings
 .claude-session
 claude_config.json
+.claude/CLAUDE.md
 AGENTS.md
 
 # MCP (Model Context Protocol) related
