@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -94,14 +95,17 @@ class AnalysisServiceTest {
         Map<String, Object> body = Map.of("choices", List.of(choice));
         ResponseEntity<Map> responseEntity = ResponseEntity.ok(body);
         when(mockRestTemplate.postForEntity(anyString(), any(), eq(Map.class))).thenReturn(responseEntity);
+        when(calendarLogRepository.findFirstByUserAndCreatedAtBetween(eq(user), any(), any()))
+                .thenReturn(Optional.empty());
 
-        String result = analysisService.analyzeAndSaveToCalendar(1L);
+        String result = analysisService.analyzeAndSaveToCalendar(1L, LocalDate.of(2026, 4, 28));
 
         assertThat(result).isEqualTo("기쁨");
         ArgumentCaptor<CalendarLogEntity> captor = ArgumentCaptor.forClass(CalendarLogEntity.class);
         verify(calendarLogRepository).save(captor.capture());
         assertThat(captor.getValue().getEmotion()).isEqualTo(EmotionType.기쁨);
         assertThat(captor.getValue().getUser()).isEqualTo(user);
+        assertThat(captor.getValue().getCreatedAt()).isEqualTo(LocalDate.of(2026, 4, 28).atStartOfDay());
     }
 
     @Test
@@ -122,6 +126,8 @@ class AnalysisServiceTest {
         Map<String, Object> body = Map.of("choices", List.of(choice));
         ResponseEntity<Map> responseEntity = ResponseEntity.ok(body);
         when(mockRestTemplate.postForEntity(anyString(), any(), eq(Map.class))).thenReturn(responseEntity);
+        when(calendarLogRepository.findFirstByUserAndCreatedAtBetween(eq(user), any(), any()))
+                .thenReturn(Optional.empty());
 
         analysisService.analyzeAndSaveToCalendar(1L);
 

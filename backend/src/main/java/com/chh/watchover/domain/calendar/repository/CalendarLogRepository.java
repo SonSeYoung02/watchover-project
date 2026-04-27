@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface CalendarLogRepository extends JpaRepository<CalendarLogEntity, Long> {
     @Query("SELECT new com.chh.watchover.domain.calendar.model.dto.EmotionStatResponse(c.emotion, COUNT(c)) " +
@@ -20,4 +22,9 @@ public interface CalendarLogRepository extends JpaRepository<CalendarLogEntity, 
             @Param("user") UserEntity user,
             @Param("year") int year,
             @Param("month") int month);
+
+    Optional<CalendarLogEntity> findFirstByUserAndCreatedAtBetween(
+            UserEntity user,
+            LocalDateTime start,
+            LocalDateTime end);
 }

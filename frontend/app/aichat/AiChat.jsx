@@ -156,6 +156,10 @@ const AiChat = () => {
       if (response && response.data) {
         if (response.data.chatRoomId) {
           setCurrentRoomId(response.data.chatRoomId);
+          await AsyncStorage.setItem(
+            "lastChatRoomId",
+            String(response.data.chatRoomId),
+          );
         }
         setMessages((prev) => [
           ...prev,

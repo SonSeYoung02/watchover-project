@@ -1,6 +1,7 @@
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -15,72 +16,85 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PieChart } from "react-native-gifted-charts";
-// ✅ 1. 토큰 사용을 위한 AsyncStorage 추가
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// ✅ 2. API 함수 연동 확인
 import { postDailyEmotion, getMonthlyStatistics } from "../api/calendarApi";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
+const EMOTION_COLORS = {
+  기쁨: "#5AA9E6",
+  행복: "#5AA9E6",
+  평온: "#7CC9A7",
+  슬픔: "#A5D3F5",
+  화남: "#F28B82",
+  혐오: "#B8A4D8",
+  불안: "#F6C177",
+};
+
 const Calendar = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
 
-  // ✅ 달이 바뀔 때마다 통계 호출
   useEffect(() => {
     fetchStatistics();
-  }, [currentMonth]);
+  }, [currentYear, currentMonth]);
+
+  const getToken = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+    if (!token) {
+      Alert.alert("알림", "로그인이 필요합니다.");
+      navigation.navigate("Login");
+      return null;
+    }
+    return token;
+  };
+
+  const resolveChatRoomId = async () => {
+    const routeChatRoomId = route.params?.chatRoomId;
+    if (routeChatRoomId) {
+      return routeChatRoomId;
+    }
+    return AsyncStorage.getItem("lastChatRoomId");
+  };
 
   const fetchStatistics = async () => {
     setLoading(true);
     try {
-      // ✅ 3. 저장된 토큰 가져오기
-      const token = await AsyncStorage.getItem("userToken");
-
-      console.log("📅 [통계 요청] 토큰 상태:", token ? "보유 중" : "없음");
-
+      const token = await getToken();
       if (!token) {
-        Alert.alert("알림", "로그인이 필요합니다.");
-        navigation.navigate("Login");
         return;
       }
 
-      // ✅ 4. 통계 API 호출
-      const result = await getMonthlyStatistics(token);
+      const result = await getMonthlyStatistics(
+        token,
+        currentYear,
+        currentMonth + 1,
+      );
+      const stats = Array.isArray(result?.data) ? result.data : [];
 
-      // ✅ 5. 명세서(image_37a561.png) 매칭: 'emotionStats' 키를 사용합니다.
-      if (result && result.emotionStats && Array.isArray(result.emotionStats)) {
-        const formattedData = result.emotionStats.map((item) => ({
-          value: item.count,
+      const formattedData = stats
+        .filter((item) => Number(item.count) > 0)
+        .map((item) => ({
+          value: Number(item.count),
           label: item.emotion,
-          color:
-            item.emotion === "행복"
-              ? "#5AA9E6"
-              : item.emotion === "슬픔"
-                ? "#A5D3F5"
-                : item.emotion === "화남"
-                  ? "#2C5A85"
-                  : "#E6F2FC",
-          gradientCenterColor: "#8EC9F8",
+          color: EMOTION_COLORS[item.emotion] || "#E6F2FC",
+          gradientCenterColor: EMOTION_COLORS[item.emotion] || "#8EC9F8",
         }));
-        setChartData(formattedData);
-      } else {
-        console.log("⚠️ 데이터 비어있음:", result);
-        setChartData([]);
-      }
+
+      setChartData(formattedData);
     } catch (error) {
-      console.log("❌ 통계 데이터 로딩 에러");
+      console.log("통계 데이터 로딩 에러");
       if (error.response) {
-        console.log("상태 코드:", error.response.status); // 여기서 403 여부 확인
+        console.log("상태 코드:", error.response.status);
         console.log("서버 응답:", JSON.stringify(error.response.data));
       }
       setChartData([]);
@@ -91,25 +105,44 @@ const Calendar = () => {
 
   const handleDatePress = async (day) => {
     setSelectedDate(new Date(currentYear, currentMonth, day));
+
     try {
-      const token = await AsyncStorage.getItem("userToken");
-      const chatingRoomId = "1"; // 👈 필요시 실제 ID로 교체
+      const token = await getToken();
+      if (!token) {
+        return;
+      }
 
-      // ✅ 6. 일일 감정 요약 API 호출
-      const result = await postDailyEmotion(chatingRoomId, token);
+      const chatRoomId = await resolveChatRoomId();
+      if (!chatRoomId) {
+        Alert.alert("알림", "분석할 채팅방이 없습니다. 먼저 AI 상담을 진행해 주세요.");
+        return;
+      }
 
-      if (result && result.data) {
+      setAnalyzing(true);
+      const selectedDateText = [
+        currentYear,
+        String(currentMonth + 1).padStart(2, "0"),
+        String(day).padStart(2, "0"),
+      ].join("-");
+      const result = await postDailyEmotion(chatRoomId, token, selectedDateText);
+      const emotion = result?.data?.emotion;
+
+      if (emotion) {
         Alert.alert(
           `${day}일 감정 분석`,
-          `오늘의 주된 감정은 [${result.data.emotion}]입니다.`,
+          `오늘의 주된 감정은 [${emotion}]입니다.`,
         );
+        fetchStatistics();
       }
     } catch (error) {
-      console.log("❌ 일일 요약 실패");
-      if (error.response && error.response.status === 403) {
-        console.log("🚫 권한 에러(403) 발생: 서버 보안 설정을 확인하세요.");
+      console.log("일일 감정 분석 실패");
+      if (error.response) {
+        console.log("상태 코드:", error.response.status);
+        console.log("서버 응답:", JSON.stringify(error.response.data));
       }
       Alert.alert("알림", "분석할 대화 데이터가 충분하지 않습니다.");
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -141,7 +174,6 @@ const Calendar = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* 달력 섹션 */}
         <View style={styles.card}>
           <View style={styles.yearRow}>
             <Text style={styles.yearText}>{currentYear}년</Text>
@@ -188,6 +220,7 @@ const Calendar = () => {
                   key={`date-${day}`}
                   style={styles.dateCell}
                   onPress={() => handleDatePress(day)}
+                  disabled={analyzing}
                 >
                   <View
                     style={[
@@ -211,7 +244,6 @@ const Calendar = () => {
           </View>
         </View>
 
-        {/* 통계 섹션 */}
         <View style={styles.card}>
           <Text style={styles.statsTitle}>{currentMonth + 1}월 감정 통계</Text>
           {loading ? (
@@ -289,6 +321,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     gap: 30,
   },
+  arrowBtn: { padding: 4 },
   monthText: {
     fontSize: 28,
     fontWeight: "900",
@@ -301,7 +334,7 @@ const styles = StyleSheet.create({
   dayCellText: { color: "#888888", fontSize: 11, fontWeight: "800" },
   dateCell: {
     width: "14.28%",
-    height: 85,
+    height: Math.min(85, SCREEN_WIDTH * 0.13),
     paddingVertical: 2,
     paddingHorizontal: 10,
   },

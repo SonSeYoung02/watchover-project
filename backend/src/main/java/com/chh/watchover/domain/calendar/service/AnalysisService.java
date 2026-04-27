@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,11 @@ public class AnalysisService {
      */
     @Transactional
     public String analyzeAndSaveToCalendar(Long chatRoomId) {
+        return analyzeAndSaveToCalendar(chatRoomId, LocalDate.now());
+    }
+
+    @Transactional
+    public String analyzeAndSaveToCalendar(Long chatRoomId, LocalDate targetDate) {
         // 1. 채팅방 및 대화 내역 가져오기
         ChatRoomEntity chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new RuntimeException("채팅방을 찾을 수 없습니다."));
@@ -95,8 +101,15 @@ public class AnalysisService {
         String analyzedEmotion = ((String) messageMap.get("content")).trim();
 
         // 6. 결과 저장 (calendar_log 테이블 구조에 맞춤)
-        CalendarLogEntity calendarLog = new CalendarLogEntity();
-        calendarLog.setUser(chatRoom.getUser()); // ChatRoom에 저장된 userId 활용
+        UserEntity user = chatRoom.getUser();
+        LocalDate analysisDate = targetDate == null ? LocalDate.now() : targetDate;
+        LocalDateTime startOfDay = analysisDate.atStartOfDay();
+        LocalDateTime endOfDay = analysisDate.plusDays(1).atStartOfDay();
+
+        CalendarLogEntity calendarLog = calendarLogRepository
+                .findFirstByUserAndCreatedAtBetween(user, startOfDay, endOfDay)
+                .orElseGet(CalendarLogEntity::new);
+        calendarLog.setUser(user); // ChatRoom에 저장된 userId 활용
 
         try {
             // AI 응답이 Enum에 정의된 값인지 확인 후 저장
@@ -107,7 +120,7 @@ public class AnalysisService {
             calendarLog.setEmotion(EmotionType.슬픔); // 기본값 설정
         }
 
-        calendarLog.setCreatedAt(LocalDateTime.now());
+        calendarLog.setCreatedAt(startOfDay);
         calendarLogRepository.save(calendarLog);
 
         return analyzedEmotion;
