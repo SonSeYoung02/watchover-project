@@ -4,6 +4,7 @@ import com.chh.watchover.domain.user.repository.UserRepository;
 import com.chh.watchover.global.exception.CustomException;
 import com.chh.watchover.global.exception.code.ErrorCode;
 import com.chh.watchover.domain.chatbot.model.dto.ChatResponse;
+import com.chh.watchover.domain.chatbot.model.dto.ChatRoomListResponse;
 import com.chh.watchover.domain.chatbot.model.entity.ChatRoomEntity;
 import com.chh.watchover.domain.chatbot.model.entity.MessageEntity;
 import com.chh.watchover.domain.chatbot.model.type.Role;
@@ -133,6 +134,17 @@ public class ChatService {
                 .map(msg -> ChatResponse.builder()
                         .chatRoomId(chatRoomId)
                         .answer(msg.getContent()) // DB에 저장된 메시지 내용
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatRoomListResponse> getChatRoomList(String loginId) {
+        return chatRoomRepository.findByUser_LoginIdOrderByCreatedAtDesc(loginId)
+                .stream()
+                .map(room -> ChatRoomListResponse.builder()
+                        .chatRoomId(room.getChatRoomId())
+                        .createdAt(room.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
     }

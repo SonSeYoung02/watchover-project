@@ -2,6 +2,7 @@ package com.chh.watchover.domain.chatbot.controller;
 
 import com.chh.watchover.domain.chatbot.model.dto.ChatRequest;
 import com.chh.watchover.domain.chatbot.model.dto.ChatResponse;
+import com.chh.watchover.domain.chatbot.model.dto.ChatRoomListResponse;
 import com.chh.watchover.domain.chatbot.service.ChatService;
 import com.chh.watchover.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +41,17 @@ public class ChatController {
                 request.getMessage()
         );
         return ApiResponse.success(chatResponse);
+    }
+
+    @Operation(summary = "내 채팅방 목록 조회", description = "로그인된 유저의 채팅방 목록을 최신순으로 반환합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "목록 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @GetMapping("/list")
+    public ApiResponse<List<ChatRoomListResponse>> getChatRoomList(
+            @AuthenticationPrincipal String loginId) {
+        return ApiResponse.success(chatService.getChatRoomList(loginId));
     }
 
     @Operation(summary = "채팅방 대화 내역 조회", description = "특정 채팅방의 전체 대화 내역을 조회합니다.")
