@@ -7,9 +7,9 @@ import lombok.Data;
 @Data
 public class ChatRequest {
 
-    @Schema(description = "사용할 페르소나 파일명", example = "doctor.txt")
+    @Schema(description = "사용할 페르소나 파일명", example = "care-prompt")
     private String promptFile;
 
-    @Schema(description = "사용자가 입력한 메시지", example = "오늘 기분이 좋지 않아요.")
+    @Schema(description = "사용자가 입력한 메시지", example = "오늘 기분이 좋지 않아")
     private String message;
 }

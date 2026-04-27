@@ -7,28 +7,42 @@ import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @Component
 public class PromptReader {
+    private static final String DEFAULT_PROMPT = "care-prompt";
+    private static final Map<String, String> PROMPT_ALIASES = Map.of(
+            "doctor", DEFAULT_PROMPT
+    );
+
     private final ResourceLoader resourceLoader;
 
     public PromptReader(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
 
-    /**
-     * 지정한 파일 이름에 해당하는 프롬프트 파일을 classpath에서 읽어 문자열로 반환합니다.
-     *
-     * @param fileName 읽을 프롬프트 파일 이름 (확장자 .md 제외)
-     * @return 프롬프트 파일의 전체 내용 문자열
-     * @throws RuntimeException 파일을 읽을 수 없는 경우
-     */
     public String readPrompt(String fileName) {
+        String promptName = normalizePromptName(fileName);
+
         try {
-            Resource resource = resourceLoader.getResource("classpath:prompts/" + fileName + ".md");
+            Resource resource = resourceLoader.getResource("classpath:prompts/" + promptName + ".md");
             return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException("프롬프트 파일을 읽을 수 없습니다: " + fileName);
+            throw new RuntimeException("프롬프트 파일을 읽을 수 없습니다: " + fileName, e);
         }
+    }
+
+    private String normalizePromptName(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return DEFAULT_PROMPT;
+        }
+
+        String promptName = fileName.trim();
+        if (promptName.endsWith(".md") || promptName.endsWith(".txt")) {
+            promptName = promptName.substring(0, promptName.lastIndexOf('.'));
+        }
+
+        return PROMPT_ALIASES.getOrDefault(promptName, promptName);
     }
 }
