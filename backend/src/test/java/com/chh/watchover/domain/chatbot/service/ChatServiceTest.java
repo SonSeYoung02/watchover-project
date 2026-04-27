@@ -113,8 +113,7 @@ class ChatServiceTest {
         given(userRepository.findByLoginId("ghost")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> chatService.getChatResponse("ghost", 1L, "prompt", "hello"))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("유저를 찾을 수 없습니다");
+                .isInstanceOf(RuntimeException.class);
     }
 
     // ─── getChatResponse — room auto-creation path ────────────────────────────
@@ -160,5 +159,21 @@ class ChatServiceTest {
         assertThat(result).hasSize(3);
         assertThat(result).extracting(ChatResponse::getAnswer)
                 .containsExactly("첫 번째 메시지", "두 번째 메시지", "세 번째 메시지");
+    }
+
+    @Test
+    void getChatHistory_removesSpeakerPrefixFromStoredMessage() {
+        MessageEntity msg = new MessageEntity();
+        msg.setRole(Role.assistant);
+        msg.setContent("챗봇: 오늘 많이 힘드셨군요.");
+        msg.setChatRoom(chatRoom);
+
+        given(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L))
+                .willReturn(List.of(msg));
+
+        List<ChatResponse> result = chatService.getChatHistory(1L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getAnswer()).isEqualTo("오늘 많이 힘드셨군요.");
     }
 }

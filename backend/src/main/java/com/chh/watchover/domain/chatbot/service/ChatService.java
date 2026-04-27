@@ -102,7 +102,7 @@ public class ChatService {
         // 응답 데이터 파싱
         List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
         Map<String, Object> messageMap = (Map<String, Object>) choices.get(0).get("message");
-        String gptAnswer = (String) messageMap.get("content");
+        String gptAnswer = stripSpeakerPrefix((String) messageMap.get("content"));
 
         // 6. DB에 대화 내역 저장
         saveMessage(chatRoom, Role.user, userMessage); // 사용자 질문 저장
@@ -133,7 +133,7 @@ public class ChatService {
         return messages.stream()
                 .map(msg -> ChatResponse.builder()
                         .chatRoomId(chatRoomId)
-                        .answer(msg.getContent()) // DB에 저장된 메시지 내용
+                        .answer(stripSpeakerPrefix(msg.getContent())) // DB에 저장된 메시지 내용
                         .build())
                 .collect(Collectors.toList());
     }
@@ -156,5 +156,13 @@ public class ChatService {
         message.setContent(content);
         message.setCreatedAt(LocalDateTime.now());
         messageRepository.save(message);
+    }
+
+    private String stripSpeakerPrefix(String content) {
+        if (content == null) {
+            return null;
+        }
+
+        return content.replaceFirst("^\\s*(챗봇|AI|상담사)\\s*[:：]\\s*", "");
     }
 }
