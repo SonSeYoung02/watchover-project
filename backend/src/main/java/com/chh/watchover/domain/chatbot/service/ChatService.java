@@ -1,5 +1,6 @@
 package com.chh.watchover.domain.chatbot.service;
 
+import com.chh.watchover.domain.calendar.repository.CalendarLogRepository;
 import com.chh.watchover.domain.user.repository.UserRepository;
 import com.chh.watchover.global.exception.CustomException;
 import com.chh.watchover.global.exception.code.ErrorCode;
@@ -39,6 +40,7 @@ public class ChatService {
     private final PromptReader promptReader;
     private final MessageRepository messageRepository; // 추가
     private final ChatRoomRepository chatRoomRepository; // 추가
+    private final CalendarLogRepository calendarLogRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
     /**
@@ -162,8 +164,19 @@ public class ChatService {
                 .map(room -> ChatRoomListResponse.builder()
                         .chatRoomId(room.getChatRoomId())
                         .createdAt(room.getCreatedAt())
+                        .emotion(resolveRoomDateEmotion(room))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private String resolveRoomDateEmotion(ChatRoomEntity room) {
+        LocalDateTime start = room.getCreatedAt().toLocalDate().atStartOfDay();
+        LocalDateTime end = start.plusDays(1);
+
+        return calendarLogRepository
+                .findFirstByUserAndCreatedAtBetween(room.getUser(), start, end)
+                .map(log -> log.getEmotion().name())
+                .orElse(null);
     }
 
     private void saveMessage(ChatRoomEntity chatRoom, Role role, String content) {

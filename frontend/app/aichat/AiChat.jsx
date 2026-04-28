@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert, // Alert 추가
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StatusBar,
@@ -105,6 +106,9 @@ const AiChat = () => {
   const [isWaiting, setIsWaiting] = useState(false);
   const [currentRoomId, setCurrentRoomId] = useState(null);
   const [userToken, setUserToken] = useState(null); // 실제 토큰을 담을 곳
+  const [finishModalVisible, setFinishModalVisible] = useState(false);
+  const [finishStep, setFinishStep] = useState("confirm");
+  const [recordedEmotion, setRecordedEmotion] = useState("");
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -177,40 +181,44 @@ const AiChat = () => {
     }
   };
 
-  // ✅ 수정된 상담 종료 함수
+  const saveRoomEmotion = async (roomId, emotion) => {
+    if (!roomId || !emotion) return;
+
+    const rawMap = await AsyncStorage.getItem("chatRoomEmotionMap");
+    const emotionMap = rawMap ? JSON.parse(rawMap) : {};
+    emotionMap[String(roomId)] = emotion;
+    await AsyncStorage.setItem("chatRoomEmotionMap", JSON.stringify(emotionMap));
+  };
+
   const handleFinishChat = () => {
-    // async 제거 (Alert 내부에서 비동기 처리)
     if (!currentRoomId) {
       Alert.alert("알림", "아직 대화 기록이 없습니다.");
       return;
     }
 
-    Alert.alert("상담 종료", "오늘의 대화를 마무리하고 감정을 기록할까요?", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "종료",
-        onPress: async () => {
-          try {
-            setIsWaiting(true);
-            const response = await finishAndSummarize(currentRoomId, userToken);
+    setFinishStep("confirm");
+    setRecordedEmotion("");
+    setFinishModalVisible(true);
+  };
 
-            if (response && response.code === "SUCCESS") {
-              const todayEmotion = response.data.emotion || "평온";
-              Alert.alert(
-                "기록 완료",
-                `오늘 당신의 마음은 '${todayEmotion}'이었네요! 기록이 저장되었습니다.`,
-                [{ text: "확인", onPress: () => navigation.navigate("Home") }],
-              );
-            }
-          } catch (error) {
-            console.error("감정 요약 실패:", error);
-            Alert.alert("알림", "기록 중 오류가 발생했습니다.");
-          } finally {
-            setIsWaiting(false);
-          }
-        },
-      },
-    ]);
+  const confirmFinishChat = async () => {
+    try {
+      setIsWaiting(true);
+      const response = await finishAndSummarize(currentRoomId, userToken);
+
+      if (response && response.code === "SUCCESS") {
+        const todayEmotion = response.data.emotion || "평온";
+        await saveRoomEmotion(currentRoomId, todayEmotion);
+        setRecordedEmotion(todayEmotion);
+        setFinishStep("success");
+      }
+    } catch (error) {
+      console.error("감정 요약 실패:", error);
+      setFinishModalVisible(false);
+      Alert.alert("알림", "기록 중 오류가 발생했습니다.");
+    } finally {
+      setIsWaiting(false);
+    }
   };
 
   return (
@@ -320,6 +328,70 @@ const AiChat = () => {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={finishModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isWaiting) setFinishModalVisible(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.finishModal}>
+            {finishStep === "confirm" ? (
+              <>
+                <View style={styles.modalIcon}>
+                  <Text style={styles.modalIconText}>AI</Text>
+                </View>
+                <Text style={styles.modalTitle}>상담을 마무리할까요?</Text>
+                <Text style={styles.modalDescription}>
+                  지금까지의 대화를 분석해서 오늘의 감정을 상담 기록에 남깁니다.
+                </Text>
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={styles.modalSecondaryBtn}
+                    onPress={() => setFinishModalVisible(false)}
+                    disabled={isWaiting}
+                  >
+                    <Text style={styles.modalSecondaryText}>취소</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.modalPrimaryBtn}
+                    onPress={confirmFinishChat}
+                    disabled={isWaiting}
+                  >
+                    {isWaiting ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={styles.modalPrimaryText}>기록하기</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.emotionBadge}>
+                  <Text style={styles.emotionBadgeText}>{recordedEmotion}</Text>
+                </View>
+                <Text style={styles.modalTitle}>감정 기록 완료</Text>
+                <Text style={styles.modalDescription}>
+                  오늘의 마음이 상담 기록에 저장되었습니다.
+                </Text>
+                <TouchableOpacity
+                  style={styles.modalDoneBtn}
+                  onPress={() => {
+                    setFinishModalVisible(false);
+                    navigation.navigate("Home");
+                  }}
+                >
+                  <Text style={styles.modalPrimaryText}>확인</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -457,6 +529,94 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   sendBtnDisabled: { backgroundColor: "#CBD5E1" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  finishModal: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 24,
+    alignItems: "center",
+  },
+  modalIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: "#E0F2FE",
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  modalIconText: { fontSize: 14, fontWeight: "900", color: "#0EA5E9" },
+  emotionBadge: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: "#F0F9FF",
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+    marginBottom: 16,
+  },
+  emotionBadgeText: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#0284C7",
+  },
+  modalTitle: {
+    fontSize: 19,
+    fontWeight: "900",
+    color: "#111827",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalDescription: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: "600",
+    color: "#64748B",
+    textAlign: "center",
+    marginBottom: 22,
+  },
+  modalActions: { flexDirection: "row", gap: 10, width: "100%" },
+  modalSecondaryBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalPrimaryBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#5AA9E6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalDoneBtn: {
+    width: "100%",
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#5AA9E6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalSecondaryText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#475569",
+  },
+  modalPrimaryText: {
+    fontSize: 15,
+    fontWeight: "900",
+    color: "#ffffff",
+  },
 });
 
 export default AiChat;

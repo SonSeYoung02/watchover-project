@@ -16,10 +16,61 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { deleteAllChatRooms, getChatList } from '../api/chatApi';
 
+const getChatDate = (item) => item.createdAt || item.date;
+
+const formatDateKey = (value) => {
+  if (!value) return '날짜 없음';
+  return String(value).slice(0, 10);
+};
+
+const formatDateLabel = (dateKey) => {
+  if (dateKey === '날짜 없음') return dateKey;
+
+  const [year, month, day] = dateKey.split('-');
+  return `${year}년 ${Number(month)}월 ${Number(day)}일`;
+};
+
+const formatTime = (value) => {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const groupByDate = (items) =>
+  items.reduce((acc, item) => {
+    const dateKey = formatDateKey(getChatDate(item));
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(item);
+    return acc;
+  }, {});
+
+const mergeLocalEmotions = async (items) => {
+  const rawMap = await AsyncStorage.getItem('chatRoomEmotionMap');
+  const emotionMap = rawMap ? JSON.parse(rawMap) : {};
+
+  return items.map((item) => {
+    const roomId = item.chatRoomId || item.id;
+    return {
+      ...item,
+      emotion: item.emotion || emotionMap[String(roomId)],
+    };
+  });
+};
+
 const ChatHistory = () => {
   const navigation = useNavigation();
   const [historyData, setHistoryData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const groupedHistory = groupByDate(historyData);
+  const groupedDates = Object.keys(groupedHistory);
 
   const fetchHistory = async () => {
       try {
@@ -34,7 +85,8 @@ const ChatHistory = () => {
         const result = await getChatList(token); 
         
         if (result && result.data) {
-          setHistoryData(result.data);
+          const mergedData = await mergeLocalEmotions(result.data);
+          setHistoryData(mergedData);
         }
       } catch (error) {
         console.error('상담 기록 로드 실패:', error);
@@ -93,20 +145,29 @@ const ChatHistory = () => {
         <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator color="#5AA9E6" /></View>
       ) : (
         <ScrollView style={{ backgroundColor: '#F8FAFC' }} contentContainerStyle={styles.listContainer}>
-          {historyData.length > 0 ? (
-            historyData.map((item) => (
-              <TouchableOpacity
-                key={item.chatRoomId || item.id}
-                style={styles.historyCard}
-                onPress={() => navigation.navigate('ChatDetail', { id: item.chatRoomId || item.id })}
-              >
-                <View style={styles.cardIcon}><MessageCircle size={22} color="#5AA9E6" /></View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardDate}>{item.date || item.createdAt}</Text>
-                  <Text style={styles.cardSummary} numberOfLines={1}>{item.summary || '상담 기록 상세 보기'}</Text>
-                </View>
-                <ChevronLeft size={18} color="#CBD5E1" style={{ transform: [{ rotate: '180deg' }] }} />
-              </TouchableOpacity>
+          {groupedDates.length > 0 ? (
+            groupedDates.map((dateKey) => (
+              <View key={dateKey} style={styles.dateSection}>
+                <Text style={styles.dateHeader}>{formatDateLabel(dateKey)}</Text>
+                {groupedHistory[dateKey].map((item) => (
+                  <TouchableOpacity
+                    key={item.chatRoomId || item.id}
+                    style={styles.historyCard}
+                    onPress={() => navigation.navigate('ChatDetail', { id: item.chatRoomId || item.id })}
+                  >
+                    <View style={styles.cardIcon}><MessageCircle size={22} color="#5AA9E6" /></View>
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.cardDate}>
+                        {formatTime(getChatDate(item)) || '시간 없음'}
+                      </Text>
+                      <Text style={styles.cardSummary} numberOfLines={1}>
+                        감정: {item.emotion || '분석 대기'}
+                      </Text>
+                    </View>
+                    <ChevronLeft size={18} color="#CBD5E1" style={{ transform: [{ rotate: '180deg' }] }} />
+                  </TouchableOpacity>
+                ))}
+              </View>
             ))
           ) : (
             <View style={styles.emptyBox}>
@@ -140,7 +201,15 @@ const styles = StyleSheet.create({
   deleteAllBtn: { padding: 8 },
   deleteAllBtnDisabled: { opacity: 0.5 },
 
-  listContainer: { padding: 20, paddingBottom: 40, gap: 12 },
+  listContainer: { padding: 20, paddingBottom: 40 },
+
+  dateSection: { marginBottom: 22 },
+  dateHeader: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#334155',
+    marginBottom: 10,
+  },
 
   historyCard: {
     flexDirection: 'row',
@@ -150,6 +219,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#F1F5F9',
+    marginBottom: 10,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 10 },
       android: { elevation: 1 },

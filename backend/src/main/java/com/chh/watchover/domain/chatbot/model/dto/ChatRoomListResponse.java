@@ -18,4 +18,6 @@ public class ChatRoomListResponse {
     private Long chatRoomId;
     @Schema(description = "채팅방 생성 시간")
     private LocalDateTime createdAt;
+    @Schema(description = "채팅방 날짜에 기록된 감정")
+    private String emotion;
 }

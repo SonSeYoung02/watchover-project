@@ -134,6 +134,7 @@ export default function Calendar() {
     ].join("-");
 
   const fetchDailyAnalysis = async (date) => {
+    setDailyAnalysis(null);
     setDailyLoading(true);
     try {
       const token = await getToken();
@@ -161,17 +162,19 @@ export default function Calendar() {
     }
   };
 
+  useEffect(() => {
+    fetchDailyAnalysis(selectedDate);
+  }, [selectedDate]);
+
   const handleDatePress = (day) => {
     const nextSelectedDate = new Date(currentYear, currentMonth, day);
     setSelectedDate(nextSelectedDate);
-    fetchDailyAnalysis(nextSelectedDate);
   };
 
   const moveMonth = (monthOffset) => {
     const nextDate = new Date(currentYear, currentMonth + monthOffset, 1);
     setCurrentDate(nextDate);
     setSelectedDate(nextDate);
-    setDailyAnalysis(null);
   };
 
   const prevMonth = () => moveMonth(-1);
@@ -181,10 +184,7 @@ export default function Calendar() {
   const emptyDays = Array.from({ length: firstDayIndex }, (_, i) => i);
   const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
   const dynamicDays = Array.from({ length: lastDay }, (_, i) => i + 1);
-  const selectedDateText = formatDate(selectedDate);
-  const selectedLog = emotionLogsByDate[selectedDateText];
-  const selectedAnalysis = dailyAnalysis || selectedLog;
-  const selectedEmotionColor = EMOTION_COLORS[selectedAnalysis?.emotion];
+  const selectedEmotionColor = EMOTION_COLORS[dailyAnalysis?.emotion];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -340,7 +340,7 @@ export default function Calendar() {
               color="#5AA9E6"
               style={{ marginVertical: 20 }}
             />
-          ) : selectedAnalysis ? (
+          ) : dailyAnalysis ? (
             <View>
               <View style={styles.selectedEmotionRow}>
                 <View
@@ -350,21 +350,21 @@ export default function Calendar() {
                   ]}
                 />
                 <Text style={styles.selectedEmotionText}>
-                  {selectedAnalysis.emotion}
+                  {dailyAnalysis.emotion}
                 </Text>
               </View>
               <Text style={styles.sectionLabel}>대화 요약</Text>
               <Text style={styles.analysisText}>
-                {selectedAnalysis.summary || "저장된 대화 요약이 없습니다."}
+                {dailyAnalysis.summary || "저장된 대화 요약이 없습니다."}
               </Text>
               <Text style={styles.sectionLabel}>감정 분석</Text>
               <Text style={styles.analysisText}>
-                {selectedAnalysis.analysis || "저장된 분석 내용이 없습니다."}
+                {dailyAnalysis.analysis || "저장된 분석 내용이 없습니다."}
               </Text>
             </View>
           ) : (
             <Text style={styles.loadingText}>
-              선택한 날짜에 저장된 분석 기록이 없습니다.
+              선택한 날짜에 대화 기반 분석이 없습니다.
             </Text>
           )}
         </View>
