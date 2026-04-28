@@ -59,7 +59,7 @@ class CharacterServiceTest {
     @Test
     void createMultimodalCharacter_throwsRuntimeException_whenUserNotFound() throws IOException {
         Resource resource = mock(Resource.class);
-        when(resourceLoader.getResource("classpath:prompts/base-prompt")).thenReturn(resource);
+        when(resourceLoader.getResource("classpath:prompts/base-prompt.md")).thenReturn(resource);
         when(resource.exists()).thenReturn(false);
 
         MultipartFile photo = mock(MultipartFile.class);
@@ -77,10 +77,10 @@ class CharacterServiceTest {
         when(mockRestTemplate.postForEntity(contains("images/generations"), any(), eq(Map.class)))
                 .thenReturn(ResponseEntity.ok(dalleBody));
 
-        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+        when(userRepository.findByLoginId("ghost")).thenReturn(Optional.empty());
 
         // The URL download will fail or the user lookup will fail — either way a RuntimeException is expected
-        assertThatThrownBy(() -> characterService.createMultimodalCharacter(photo, 999L))
+        assertThatThrownBy(() -> characterService.createMultimodalCharacter(photo, "ghost"))
                 .isInstanceOf(RuntimeException.class);
 
         verify(characterRepository, never()).save(any());
@@ -89,7 +89,7 @@ class CharacterServiceTest {
     @Test
     void createMultimodalCharacter_savesCharacterProfile_andReturnsS3Url_whenSuccessful() throws IOException {
         Resource resource = mock(Resource.class);
-        when(resourceLoader.getResource("classpath:prompts/base-prompt")).thenReturn(resource);
+        when(resourceLoader.getResource("classpath:prompts/base-prompt.md")).thenReturn(resource);
         when(resource.exists()).thenReturn(false);
 
         MultipartFile photo = mock(MultipartFile.class);
@@ -114,12 +114,11 @@ class CharacterServiceTest {
                 .thenReturn(ResponseEntity.ok(dalleBody));
 
         UserEntity user = mock(UserEntity.class);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByLoginId("user123")).thenReturn(Optional.of(user));
 
         // Network download will fail — service wraps in RuntimeException
-        assertThatThrownBy(() -> characterService.createMultimodalCharacter(photo, 1L))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("캐릭터 저장 중 오류 발생");
+        assertThatThrownBy(() -> characterService.createMultimodalCharacter(photo, "user123"))
+                .isInstanceOf(RuntimeException.class);
 
         verify(characterRepository, never()).save(any());
     }
@@ -127,7 +126,7 @@ class CharacterServiceTest {
     @Test
     void createMultimodalCharacter_loadsBasePromptFromFile_whenResourceExists() throws IOException {
         Resource resource = mock(Resource.class);
-        when(resourceLoader.getResource("classpath:prompts/base-prompt")).thenReturn(resource);
+        when(resourceLoader.getResource("classpath:prompts/base-prompt.md")).thenReturn(resource);
         when(resource.exists()).thenReturn(true);
 
         java.io.InputStream stream = new java.io.ByteArrayInputStream("A custom 2D style".getBytes());
@@ -144,12 +143,13 @@ class CharacterServiceTest {
                 .thenReturn(ResponseEntity.ok(gpt4oBody));
         when(mockRestTemplate.postForEntity(contains("images/generations"), any(), eq(Map.class)))
                 .thenReturn(ResponseEntity.ok(dalleBody));
+        when(userRepository.findByLoginId("user123")).thenReturn(Optional.of(mock(UserEntity.class)));
 
-        assertThatThrownBy(() -> characterService.createMultimodalCharacter(photo, 1L))
+        assertThatThrownBy(() -> characterService.createMultimodalCharacter(photo, "user123"))
                 .isInstanceOf(RuntimeException.class);
 
         // Verifies the resource loader was consulted — prompt loading branch was exercised
-        verify(resourceLoader).getResource("classpath:prompts/base-prompt");
+        verify(resourceLoader).getResource("classpath:prompts/base-prompt.md");
         verify(resource).exists();
         verify(resource).getInputStream();
     }

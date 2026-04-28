@@ -170,7 +170,7 @@ class LoginServiceTest {
     @Test
     void userSearch_returnsUserDto_whenUserExistsWithCharacterProfile() {
         given(userRepository.findByLoginId("user123")).willReturn(Optional.of(existingUser));
-        given(characterProfileRepository.findByUserUserId(existingUser.getUserId()))
+        given(characterProfileRepository.findFirstByUserUserIdOrderByIdDesc(existingUser.getUserId()))
                 .willReturn(Optional.empty());
 
         SearchResponseDto result = loginService.userSearch("user123");

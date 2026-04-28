@@ -13,6 +13,31 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { generateCharacter } from "../api/characterApi";
 
+const getCharacterCreateErrorMessage = (error) => {
+  const status = error?.response?.status;
+  const apiBody = error?.response?.data;
+  const code = apiBody?.code;
+  const message = apiBody?.message;
+
+  if (message) {
+    return code ? `${message} (${code})` : message;
+  }
+
+  if (error?.code === "ECONNABORTED") {
+    return "이미지 분석 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.";
+  }
+
+  if (!error?.response) {
+    return "서버 연결이 원활하지 않습니다. 네트워크 상태를 확인해 주세요.";
+  }
+
+  if (status >= 500) {
+    return "서버에서 캐릭터를 생성하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+  }
+
+  return "캐릭터 생성에 실패했습니다. 다시 시도해 주세요.";
+};
+
 export default function CharacterCreate() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -63,12 +88,7 @@ export default function CharacterCreate() {
       const message = apiBody?.message;
       console.log("상태 코드:", status, "에러 코드:", code, "메시지:", message);
 
-      Alert.alert(
-        "생성 실패",
-        message
-          ? `${message}${code ? ` (${code})` : ""}`
-          : "이미지 분석 시간이 초과되었거나 서버 연결이 원활하지 않습니다.",
-      );
+      Alert.alert("캐릭터 생성 실패", getCharacterCreateErrorMessage(error));
       navigation.goBack();
     }
   };

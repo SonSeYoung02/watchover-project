@@ -54,7 +54,7 @@ public class LoginService {
     public SearchResponseDto userSearch(String userId) {
         UserEntity user = userRepository.findByLoginId(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        String characterImage = characterProfileRepository.findByUserUserId(user.getUserId())
+        String characterImage = characterProfileRepository.findFirstByUserUserIdOrderByIdDesc(user.getUserId())
                 .map(c -> c.getImage())
                 .orElse(null);
         return SearchResponseDto.from(user, characterImage);

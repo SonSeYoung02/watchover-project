@@ -1,9 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  Alert,
   Image,
   Platform,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -12,10 +14,54 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { launchImageLibrary } from 'react-native-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getMyCharacterImages, selectMyCharacterImage } from '../api/characterApi';
 
 export default function CharacterIndex() {
   const navigation = useNavigation();
   const [image, setImage] = useState(null);
+  const [characterImages, setCharacterImages] = useState([]);
+  const [selectedProfileImage, setSelectedProfileImage] = useState(null);
+
+  useEffect(() => {
+    const loadCharacterImages = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const storedProfileImage = await AsyncStorage.getItem('selectedProfileImage');
+        setSelectedProfileImage(storedProfileImage);
+
+        if (!token) return;
+
+        const result = await getMyCharacterImages(token);
+        if (result?.code === 'SUCCESS' && Array.isArray(result.data)) {
+          setCharacterImages(result.data);
+        }
+      } catch (error) {
+        console.error('캐릭터 이미지 목록 로드 실패:', error);
+      }
+    };
+
+    loadCharacterImages();
+  }, []);
+
+  const selectProfileImage = async (imageUrl) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        Alert.alert('알림', '로그인이 필요합니다.');
+        return;
+      }
+
+      await selectMyCharacterImage(imageUrl, token);
+      await AsyncStorage.setItem('selectedProfileImage', imageUrl);
+      await AsyncStorage.setItem('characterImage', imageUrl);
+      setSelectedProfileImage(imageUrl);
+      Alert.alert('프로필 설정', '선택한 캐릭터가 홈 프로필에 표시됩니다.');
+    } catch (error) {
+      console.error('프로필 이미지 저장 실패:', error);
+      Alert.alert('오류', '프로필 이미지를 저장하지 못했습니다.');
+    }
+  };
 
   const pickImage = () => {
     launchImageLibrary(
@@ -57,6 +103,40 @@ export default function CharacterIndex() {
             </View>
           )}
         </TouchableOpacity>
+
+        <View style={styles.savedSection}>
+          <Text style={styles.savedTitle}>저장된 캐릭터</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.savedList}
+          >
+            {characterImages.length > 0 ? (
+              characterImages.map((imageUrl) => {
+                const isSelected = selectedProfileImage === imageUrl;
+                return (
+                  <TouchableOpacity
+                    key={imageUrl}
+                    style={[styles.savedImageButton, isSelected && styles.savedImageSelected]}
+                    onPress={() => selectProfileImage(imageUrl)}
+                    activeOpacity={0.8}
+                  >
+                    <Image source={{ uri: imageUrl }} style={styles.savedImage} />
+                    {isSelected && (
+                      <View style={styles.selectedBadge}>
+                        <Text style={styles.selectedBadgeText}>선택됨</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })
+            ) : (
+              <View style={styles.emptySavedBox}>
+                <Text style={styles.emptySavedText}>아직 저장된 캐릭터가 없습니다.</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
 
         <TouchableOpacity
           style={styles.genBtn}
@@ -153,6 +233,67 @@ const styles = StyleSheet.create({
   uploadBoxSub: {
     fontSize: 12,
     color: '#888888',
+  },
+  savedSection: {
+    marginBottom: 20,
+  },
+  savedTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#333333',
+    marginBottom: 10,
+  },
+  savedList: {
+    minHeight: 118,
+    gap: 12,
+    paddingRight: 4,
+  },
+  savedImageButton: {
+    width: 96,
+    height: 112,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+    backgroundColor: '#F8FAFC',
+  },
+  savedImageSelected: {
+    borderColor: '#5AA9E6',
+  },
+  savedImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  selectedBadge: {
+    position: 'absolute',
+    left: 6,
+    right: 6,
+    bottom: 6,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(90, 169, 230, 0.92)',
+    alignItems: 'center',
+  },
+  selectedBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  emptySavedBox: {
+    width: 260,
+    height: 112,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#EEF3F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptySavedText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '600',
   },
   genBtn: {
     width: '100%',

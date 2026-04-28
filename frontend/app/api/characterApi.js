@@ -20,6 +20,7 @@ export const generateCharacter = async (imageUri, token) => {
         Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",
       },
+      timeout: 120000,
     });
     return response.data;
   } catch (error) {
@@ -31,6 +32,32 @@ export const generateCharacter = async (imageUri, token) => {
       apiBody?.message,
       error?.message,
     );
+    throw error;
+  }
+};
+
+export const getMyCharacterImages = async (token) => {
+  try {
+    const response = await client.get("/api/characters/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("캐릭터 이미지 목록 API 에러:", error);
+    throw error;
+  }
+};
+
+export const selectMyCharacterImage = async (imageUrl, token) => {
+  try {
+    const response = await client.patch(
+      "/api/characters/me/profile",
+      { imageUrl },
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("프로필 캐릭터 선택 API 에러:", error);
     throw error;
   }
 };

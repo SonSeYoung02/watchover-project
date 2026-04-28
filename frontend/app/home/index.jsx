@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { BotMessageSquare, ChevronRight, Quote, Users } from 'lucide-react-native';
 import {
   Dimensions,
@@ -99,7 +99,10 @@ const MainHome = () => {
         console.log('👤 유저 정보 응답:', JSON.stringify(result, null, 2));
         if (result && result.code === 'SUCCESS' && result.data) {
           setUserName(result.data.nickname || result.data.loginId || '유저');
-          if (result.data.characterImage) {
+          const selectedImage = await AsyncStorage.getItem('selectedProfileImage');
+          if (selectedImage) {
+            setCharacterImage(selectedImage);
+          } else if (result.data.characterImage) {
             setCharacterImage(result.data.characterImage);
             await AsyncStorage.setItem('characterImage', result.data.characterImage);
           } else {
@@ -149,6 +152,27 @@ const MainHome = () => {
     fetchQuotes();
     loadAttendance();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadSelectedProfileImage = async () => {
+        try {
+          const selectedImage = await AsyncStorage.getItem('selectedProfileImage');
+          if (selectedImage) {
+            setCharacterImage(selectedImage);
+            return;
+          }
+
+          const cached = await AsyncStorage.getItem('characterImage');
+          if (cached) setCharacterImage(cached);
+        } catch (error) {
+          console.error('프로필 이미지 로드 실패:', error);
+        }
+      };
+
+      loadSelectedProfileImage();
+    }, []),
+  );
 
   const handleCheckIn = async () => {
     if (isCheckedToday) return;

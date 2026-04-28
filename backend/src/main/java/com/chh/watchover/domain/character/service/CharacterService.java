@@ -29,6 +29,7 @@ import tools.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -115,6 +116,43 @@ public class CharacterService {
         log.info("[Character] DB 기록 성공 userId={}", user.getUserId());
 
         return s3Url;
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getCharacterImages(String loginId) {
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new OpenAiApiException(ErrorCode.USER_NOT_FOUND));
+
+        return characterRepository.findAllByUserUserIdOrderByIdDesc(user.getUserId()).stream()
+                .map(CharacterProfileEntity::getImage)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public String selectCharacterImage(String loginId, String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DATA_EMPTY);
+        }
+
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new OpenAiApiException(ErrorCode.USER_NOT_FOUND));
+
+        boolean belongsToUser = characterRepository.findAllByUserUserIdOrderByIdDesc(user.getUserId()).stream()
+                .map(CharacterProfileEntity::getImage)
+                .anyMatch(imageUrl::equals);
+
+        if (!belongsToUser) {
+            throw new OpenAiApiException(ErrorCode.CHARACTER_NOT_FOUND);
+        }
+
+        CharacterProfileEntity selectedProfile = CharacterProfileEntity.builder()
+                .user(user)
+                .image(imageUrl)
+                .build();
+        characterRepository.save(selectedProfile);
+        return imageUrl;
     }
 
     private byte[] downloadImage(String imageUrl) {

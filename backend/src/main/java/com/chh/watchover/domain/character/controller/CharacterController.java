@@ -1,6 +1,7 @@
 package com.chh.watchover.domain.character.controller;
 
 import com.chh.watchover.domain.character.model.dto.CharacterResponse;
+import com.chh.watchover.domain.character.model.dto.CharacterProfileSelectRequest;
 import com.chh.watchover.domain.character.service.CharacterService;
 import com.chh.watchover.global.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
+import java.util.List;
 
 @Tag(name = "Character", description = "AI 캐릭터 생성 API")
 @RestController
@@ -66,5 +68,19 @@ public class CharacterController {
     ) {
         String s3ImageUrl = characterService.createMultimodalCharacter(image, principal.getName());
         return ResponseEntity.ok(ApiResponse.success(new CharacterResponse(s3ImageUrl)));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<List<String>>> getMyCharacterImages(Principal principal) {
+        return ResponseEntity.ok(ApiResponse.success(characterService.getCharacterImages(principal.getName())));
+    }
+
+    @PatchMapping("/me/profile")
+    public ResponseEntity<ApiResponse<CharacterResponse>> selectMyCharacterImage(
+            @RequestBody CharacterProfileSelectRequest request,
+            Principal principal
+    ) {
+        String selectedImageUrl = characterService.selectCharacterImage(principal.getName(), request.imageUrl());
+        return ResponseEntity.ok(ApiResponse.success(new CharacterResponse(selectedImageUrl)));
     }
 }
