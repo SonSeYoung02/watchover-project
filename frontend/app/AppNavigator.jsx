@@ -23,6 +23,7 @@ import PostsComments from "./community/user/PostsComments";
 import Mypage from "./mypage/Mypage";
 import Settings from "./mypage/Settings";
 import Guide from "./mypage/Guide";
+import Terms from "./mypage/Terms";
 
 const Stack = createNativeStackNavigator();
 
@@ -58,6 +59,7 @@ export default function AppNavigator() {
           <Stack.Screen name="Mypage" component={Mypage} />
           <Stack.Screen name="Settings" component={Settings} />
           <Stack.Screen name="Guide" component={Guide} />
+          <Stack.Screen name="Terms" component={Terms} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

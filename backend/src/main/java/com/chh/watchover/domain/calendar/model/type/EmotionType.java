@@ -4,5 +4,7 @@ public enum EmotionType {
     기쁨,
     슬픔,
     화남,
-    혐오
+    혐오,
+    평온,
+    불안
 }

@@ -22,7 +22,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserSearch } from "../api/userApi";
-import { getMyCharacterImages, selectMyCharacterImage } from "../api/characterApi";
 
 const MyPage = () => {
   const navigation = useNavigation();
@@ -32,7 +31,6 @@ const MyPage = () => {
     email: "",
   });
   const [profileImage, setProfileImage] = useState(null);
-  const [characterImages, setCharacterImages] = useState([]);
 
   useEffect(() => {
     const fetchMyData = async () => {
@@ -41,6 +39,7 @@ const MyPage = () => {
         if (!token) return;
 
         const result = await getUserSearch(token);
+        const profileDisabled = await AsyncStorage.getItem('profileCharacterDisabled');
         const storedProfileImage = await AsyncStorage.getItem('selectedProfileImage');
 
         if (result && result.code === "SUCCESS" && result.data) {
@@ -49,14 +48,13 @@ const MyPage = () => {
             nickname: serverUser.nickname || "이름 없음",
             email: serverUser.email || serverUser.loginId || "이메일 정보 없음",
           });
-          setProfileImage(storedProfileImage || serverUser.characterImage || null);
+          setProfileImage(
+            profileDisabled === 'true'
+              ? null
+              : storedProfileImage || serverUser.characterImage || null,
+          );
         } else {
-          setProfileImage(storedProfileImage);
-        }
-
-        const imagesResult = await getMyCharacterImages(token);
-        if (imagesResult?.code === "SUCCESS" && Array.isArray(imagesResult.data)) {
-          setCharacterImages(imagesResult.data);
+          setProfileImage(profileDisabled === 'true' ? null : storedProfileImage);
         }
       } catch (error) {
         console.error("내 정보 로드 실패:", error);
@@ -64,25 +62,6 @@ const MyPage = () => {
     };
     fetchMyData();
   }, []);
-
-  const selectProfileImage = async (imageUrl) => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        Alert.alert("알림", "로그인이 필요합니다.");
-        return;
-      }
-
-      await selectMyCharacterImage(imageUrl, token);
-      await AsyncStorage.setItem('selectedProfileImage', imageUrl);
-      await AsyncStorage.setItem('characterImage', imageUrl);
-      setProfileImage(imageUrl);
-      Alert.alert("프로필 설정", "선택한 캐릭터가 홈 화면에 표시됩니다.");
-    } catch (error) {
-      console.error("프로필 이미지 저장 실패:", error);
-      Alert.alert("오류", "프로필 이미지를 저장하지 못했습니다.");
-    }
-  };
 
   const handleLogout = () => {
     Alert.alert("로그아웃", "정말 로그아웃 하시겠습니까?", [
@@ -134,39 +113,6 @@ const MyPage = () => {
               <Text style={styles.userEmail}>{userInfo.email}</Text>
             </View>
           </View>
-          <View style={styles.profilePicker}>
-            <Text style={styles.profilePickerTitle}>프로필 캐릭터 선택</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.profileImageList}
-            >
-              {characterImages.length > 0 ? (
-                characterImages.map((imageUrl) => {
-                  const isSelected = profileImage === imageUrl;
-                  return (
-                    <TouchableOpacity
-                      key={imageUrl}
-                      style={[styles.profileImageButton, isSelected && styles.profileImageSelected]}
-                      onPress={() => selectProfileImage(imageUrl)}
-                      activeOpacity={0.8}
-                    >
-                      <Image source={{ uri: imageUrl }} style={styles.profileOptionImage} />
-                      {isSelected && (
-                        <View style={styles.profileSelectedBadge}>
-                          <Text style={styles.profileSelectedBadgeText}>선택됨</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })
-              ) : (
-                <View style={styles.emptyProfileImages}>
-                  <Text style={styles.emptyProfileImagesText}>생성된 캐릭터가 없습니다.</Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
         </View>
 
         <View style={styles.mypageContent}>
@@ -203,7 +149,10 @@ const MyPage = () => {
               <ChevronRight size={18} color="#cccccc" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.footerActionItem}>
+            <TouchableOpacity
+              style={styles.footerActionItem}
+              onPress={() => navigation.navigate("Terms")}
+            >
               <Text style={styles.footerActionText}>서비스 이용 약관</Text>
             </TouchableOpacity>
 
@@ -263,67 +212,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     resizeMode: "cover",
-  },
-  profilePicker: {
-    marginTop: 24,
-  },
-  profilePickerTitle: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#333333",
-    marginBottom: 12,
-  },
-  profileImageList: {
-    minHeight: 110,
-    gap: 12,
-    paddingRight: 4,
-  },
-  profileImageButton: {
-    width: 92,
-    height: 104,
-    borderRadius: 14,
-    overflow: "hidden",
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F8FAFC",
-  },
-  profileImageSelected: {
-    borderColor: "#5AA9E6",
-  },
-  profileOptionImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  profileSelectedBadge: {
-    position: "absolute",
-    left: 6,
-    right: 6,
-    bottom: 6,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: "rgba(90, 169, 230, 0.92)",
-    alignItems: "center",
-  },
-  profileSelectedBadgeText: {
-    color: "#ffffff",
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  emptyProfileImages: {
-    width: 260,
-    height: 104,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#EEF3F8",
-    backgroundColor: "#F8FAFC",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyProfileImagesText: {
-    color: "#94A3B8",
-    fontSize: 13,
-    fontWeight: "600",
   },
   userName: {
     fontSize: 24,

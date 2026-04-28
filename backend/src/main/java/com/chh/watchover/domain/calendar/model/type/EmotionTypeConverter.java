@@ -29,6 +29,12 @@ public class EmotionTypeConverter implements AttributeConverter<EmotionType, Str
         if (dbData.contains("슬픔") || dbData.contains("뵒")) {
             return EmotionType.슬픔;
         }
+        if (dbData.contains("평온") || dbData.contains("안정") || dbData.contains("차분")) {
+            return EmotionType.평온;
+        }
+        if (dbData.contains("불안") || dbData.contains("걱정") || dbData.contains("두려")) {
+            return EmotionType.불안;
+        }
 
         try {
             return EmotionType.valueOf(dbData);

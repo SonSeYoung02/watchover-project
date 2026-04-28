@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, MessageCircle, Sparkles } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -49,13 +49,52 @@ const normalizeEmotion = (emotion) => {
   return emotion;
 };
 
+const FILTER_OPTIONS = ["전체", ...EMOTION_ORDER];
+
+const buildComparisonComment = (currentData, previousData, hasPrevious) => {
+  const currentTotal = currentData.reduce((sum, item) => sum + item.value, 0);
+  if (!hasPrevious) {
+    if (currentTotal === 0) {
+      return "아직 이번 달 감정 기록이 없어요. 대화를 통해 감정을 남겨보세요.";
+    }
+    return "지난달 비교 데이터가 없어 이번 달부터 감정 흐름을 쌓아가고 있어요.";
+  }
+
+  const previousMap = previousData.reduce((acc, item) => {
+    acc[item.label] = item.value;
+    return acc;
+  }, {});
+
+  let topEmotion = null;
+  let topDiff = 0;
+  EMOTION_ORDER.forEach((emotion) => {
+    const current = currentData.find((item) => item.label === emotion)?.value || 0;
+    const prev = previousMap[emotion] || 0;
+    const diff = current - prev;
+    if (Math.abs(diff) > Math.abs(topDiff)) {
+      topDiff = diff;
+      topEmotion = emotion;
+    }
+  });
+
+  if (!topEmotion || topDiff === 0) {
+    return "지난달과 감정 기록이 비슷하게 유지되고 있어요.";
+  }
+
+  const direction = topDiff > 0 ? "늘었어요" : "줄었어요";
+  return `이번 달은 지난달보다 ${topEmotion} 기록이 ${Math.abs(topDiff)}회 ${direction}.`;
+};
+
 export default function Calendar() {
   const navigation = useNavigation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [monthlyChartData, setMonthlyChartData] = useState([]);
+  const [previousMonthChartData, setPreviousMonthChartData] = useState([]);
+  const [hasPreviousMonthData, setHasPreviousMonthData] = useState(false);
   const [dailyChartData, setDailyChartData] = useState([]);
   const [emotionLogsByDate, setEmotionLogsByDate] = useState({});
+  const [emotionFilter, setEmotionFilter] = useState(null);
   const [dailyAnalysis, setDailyAnalysis] = useState(null);
   const [dailyLoading, setDailyLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -75,19 +114,42 @@ export default function Calendar() {
     return token;
   };
 
+  const formatStats = (stats) => {
+    const countByEmotion = stats.reduce((acc, item) => {
+      const emotion = normalizeEmotion(item.emotion);
+      if (emotion) {
+        acc[emotion] = Number(item.count);
+      }
+      return acc;
+    }, {});
+    return EMOTION_ORDER.map((emotion) => ({
+      value: countByEmotion[emotion] || 0,
+      label: emotion,
+      dataPointText: String(countByEmotion[emotion] || 0),
+    }));
+  };
+
   const fetchStatistics = async () => {
     setLoading(true);
     try {
       const token = await getToken();
       if (!token) return;
 
-      const [statsResult, logsResult] = await Promise.all([
+      const previousMonthDate = new Date(currentYear, currentMonth - 1, 1);
+      const previousYear = previousMonthDate.getFullYear();
+      const previousMonth = previousMonthDate.getMonth() + 1;
+
+      const [statsResult, logsResult, prevStatsResult] = await Promise.all([
         getMonthlyStatistics(token, currentYear, currentMonth + 1),
         getMonthlyEmotionLogs(token, currentYear, currentMonth + 1),
+        getMonthlyStatistics(token, previousYear, previousMonth).catch(() => null),
       ]);
 
       const stats = Array.isArray(statsResult?.data) ? statsResult.data : [];
       const logs = Array.isArray(logsResult?.data) ? logsResult.data : [];
+      const prevStats = Array.isArray(prevStatsResult?.data)
+        ? prevStatsResult.data
+        : [];
 
       const logsByDate = logs.reduce((acc, item) => {
         const emotion = normalizeEmotion(item.emotion);
@@ -101,18 +163,15 @@ export default function Calendar() {
       }, {});
       setEmotionLogsByDate(logsByDate);
 
-      const countByEmotion = stats.reduce((acc, item) => {
-        const emotion = normalizeEmotion(item.emotion);
-        acc[emotion] = Number(item.count);
-        return acc;
-      }, {});
-      const formattedData = EMOTION_ORDER.map((emotion) => ({
-        value: countByEmotion[emotion] || 0,
-        label: emotion,
-        dataPointText: String(countByEmotion[emotion] || 0),
-      }));
+      setMonthlyChartData(formatStats(stats));
 
-      setMonthlyChartData(formattedData);
+      const previousFormatted = formatStats(prevStats);
+      const previousTotal = previousFormatted.reduce(
+        (sum, item) => sum + item.value,
+        0,
+      );
+      setPreviousMonthChartData(previousFormatted);
+      setHasPreviousMonthData(prevStatsResult !== null && previousTotal > 0);
     } catch (error) {
       console.log("통계 데이터 로딩 오류");
       if (error.response) {
@@ -120,6 +179,8 @@ export default function Calendar() {
         console.log("서버 응답:", JSON.stringify(error.response.data));
       }
       setMonthlyChartData([]);
+      setPreviousMonthChartData([]);
+      setHasPreviousMonthData(false);
       setEmotionLogsByDate({});
     } finally {
       setLoading(false);
@@ -213,6 +274,15 @@ export default function Calendar() {
     const nextDate = new Date(currentYear, currentMonth + monthOffset, 1);
     setCurrentDate(nextDate);
     setSelectedDate(nextDate);
+    setEmotionFilter(null);
+  };
+
+  const handleFilterPress = (option) => {
+    if (option === "전체") {
+      setEmotionFilter(null);
+      return;
+    }
+    setEmotionFilter((prev) => (prev === option ? null : option));
   };
 
   const prevMonth = () => moveMonth(-1);
@@ -222,10 +292,14 @@ export default function Calendar() {
   const emptyDays = Array.from({ length: firstDayIndex }, (_, i) => i);
   const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
   const dynamicDays = Array.from({ length: lastDay }, (_, i) => i + 1);
-  const selectedEmotionColor = EMOTION_COLORS[dailyAnalysis?.emotion];
   const monthlyTotal = monthlyChartData.reduce((sum, item) => sum + item.value, 0);
   const dailyTotal = dailyChartData.reduce((sum, item) => sum + item.value, 0);
   const mainDailyEmotion = dailyChartData[0];
+  const comparisonComment = buildComparisonComment(
+    monthlyChartData,
+    previousMonthChartData,
+    hasPreviousMonthData,
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -237,7 +311,7 @@ export default function Calendar() {
         >
           <ChevronLeft size={28} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>달력 및 통계</Text>
+        <Text style={styles.headerTitle}>달력</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -258,6 +332,44 @@ export default function Calendar() {
               <ChevronRight size={24} color="#5AA9E6" />
             </TouchableOpacity>
           </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterChipsRow}
+          >
+            {FILTER_OPTIONS.map((option) => {
+              const isActive =
+                option === "전체"
+                  ? emotionFilter === null
+                  : emotionFilter === option;
+              const chipColor =
+                option === "전체"
+                  ? "#5AA9E6"
+                  : EMOTION_COLORS[option] || "#5AA9E6";
+              return (
+                <TouchableOpacity
+                  key={`filter-${option}`}
+                  onPress={() => handleFilterPress(option)}
+                  style={[
+                    styles.filterChip,
+                    isActive && {
+                      backgroundColor: chipColor,
+                      borderColor: chipColor,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      isActive && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
           <View style={styles.calendarGrid}>
             {days.map((day, idx) => (
               <View key={`day-${idx}`} style={styles.dayCellContainer}>
@@ -293,6 +405,11 @@ export default function Calendar() {
                   : dayOfWeek === 6
                     ? "#5AA9E6"
                     : "#333";
+              const matchesFilter =
+                emotionFilter === null || dayEmotion === emotionFilter;
+              const isDimmed = emotionFilter !== null && !matchesFilter;
+              const isHighlighted =
+                emotionFilter !== null && matchesFilter && emotionColor;
 
               return (
                 <TouchableOpacity
@@ -304,6 +421,13 @@ export default function Calendar() {
                     style={[
                       styles.dateInner,
                       isSelected && styles.dateInnerSelected,
+                      isHighlighted && {
+                        borderWidth: 2,
+                        borderColor: emotionColor,
+                        backgroundColor: `${emotionColor}22`,
+                        borderRadius: 16,
+                      },
+                      isDimmed && styles.dateInnerDimmed,
                     ]}
                   >
                     <Text
@@ -311,6 +435,7 @@ export default function Calendar() {
                         styles.dateText,
                         !isSelected && { color },
                         isSelected && styles.dateTextSelected,
+                        isDimmed && styles.dateTextDimmed,
                       ]}
                     >
                       {day}
@@ -320,6 +445,7 @@ export default function Calendar() {
                         style={[
                           styles.emotionDot,
                           { backgroundColor: emotionColor },
+                          isDimmed && { opacity: 0.25 },
                         ]}
                       />
                     )}
@@ -388,6 +514,11 @@ export default function Calendar() {
             ) : (
               <Text style={styles.loadingText}>기록된 데이터가 없습니다.</Text>
             )}
+            {!loading && (
+              <View style={styles.comparisonBox}>
+                <Text style={styles.comparisonText}>{comparisonComment}</Text>
+              </View>
+            )}
         </View>
 
         <View style={styles.statCard}>
@@ -454,10 +585,18 @@ export default function Calendar() {
             )}
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.statsTitle}>
-            {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일 분석
-          </Text>
+        <View style={styles.analysisCard}>
+          <View style={styles.analysisHeader}>
+            <View>
+              <Text style={styles.analysisDate}>
+                {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
+              </Text>
+              <Text style={styles.analysisSubtitle}>대화 기반 분석</Text>
+            </View>
+            <View style={styles.analysisHeaderIcon}>
+              <Sparkles size={20} color="#5AA9E6" />
+            </View>
+          </View>
           {dailyLoading ? (
             <ActivityIndicator
               size="small"
@@ -466,25 +605,24 @@ export default function Calendar() {
             />
           ) : dailyAnalysis ? (
             <View>
-              <View style={styles.selectedEmotionRow}>
-                <View
-                  style={[
-                    styles.selectedEmotionDot,
-                    { backgroundColor: selectedEmotionColor || "#E6F2FC" },
-                  ]}
-                />
-                <Text style={styles.selectedEmotionText}>
-                  {dailyAnalysis.emotion}
+              <View style={styles.analysisSection}>
+                <View style={styles.analysisSectionHeader}>
+                  <MessageCircle size={16} color="#5AA9E6" />
+                  <Text style={styles.sectionLabel}>대화 요약</Text>
+                </View>
+                <Text style={styles.analysisText}>
+                  {dailyAnalysis.summary || "저장된 대화 요약이 없습니다."}
                 </Text>
               </View>
-              <Text style={styles.sectionLabel}>대화 요약</Text>
-              <Text style={styles.analysisText}>
-                {dailyAnalysis.summary || "저장된 대화 요약이 없습니다."}
-              </Text>
-              <Text style={styles.sectionLabel}>감정 분석</Text>
-              <Text style={styles.analysisText}>
-                {dailyAnalysis.analysis || "저장된 분석 내용이 없습니다."}
-              </Text>
+              <View style={styles.analysisSection}>
+                <View style={styles.analysisSectionHeader}>
+                  <Sparkles size={16} color="#5AA9E6" />
+                  <Text style={styles.sectionLabel}>감정 분석</Text>
+                </View>
+                <Text style={styles.analysisText}>
+                  {dailyAnalysis.analysis || "저장된 분석 내용이 없습니다."}
+                </Text>
+              </View>
             </View>
           ) : (
             <Text style={styles.loadingText}>
@@ -528,6 +666,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f0f0f0",
   },
+  analysisCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#EAF2F8",
+    shadowColor: "#5AA9E6",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 2,
+  },
   yearRow: { alignItems: "center", marginBottom: 4 },
   yearText: { fontSize: 13, fontWeight: "700", color: "#888888" },
   monthSelector: {
@@ -561,8 +712,46 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   dateInnerSelected: { backgroundColor: "#F0F0F0", borderRadius: 16 },
+  dateInnerDimmed: { opacity: 0.3 },
   dateText: { fontSize: 12, fontWeight: "600" },
   dateTextSelected: { color: "#111111", fontWeight: "800" },
+  dateTextDimmed: { color: "#CBD5E1" },
+  filterChipsRow: {
+    paddingVertical: 8,
+    paddingHorizontal: 2,
+    gap: 8,
+    marginBottom: 12,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginRight: 8,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#475569",
+  },
+  filterChipTextActive: {
+    color: "#FFFFFF",
+  },
+  comparisonBox: {
+    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: "#F0F9FF",
+    borderRadius: 14,
+  },
+  comparisonText: {
+    fontSize: 13,
+    color: "#0F172A",
+    fontWeight: "700",
+    lineHeight: 20,
+  },
   emotionDot: {
     width: 8,
     height: 8,
@@ -699,33 +888,51 @@ const styles = StyleSheet.create({
     color: "#111827",
     fontWeight: "900",
   },
-  selectedEmotionRow: {
+  analysisHeader: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 18,
   },
-  selectedEmotionDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
+  analysisDate: {
+    fontSize: 21,
+    color: "#111827",
+    fontWeight: "900",
   },
-  selectedEmotionText: {
-    fontSize: 16,
-    color: "#333333",
+  analysisSubtitle: {
+    fontSize: 12,
+    color: "#94A3B8",
     fontWeight: "800",
+    marginTop: 4,
+  },
+  analysisHeaderIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 16,
+    backgroundColor: "#F0F9FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  analysisSection: {
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#EEF4F8",
+  },
+  analysisSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
   },
   sectionLabel: {
     fontSize: 13,
-    color: "#5AA9E6",
-    fontWeight: "800",
-    marginBottom: 8,
-    marginTop: 8,
+    color: "#2563EB",
+    fontWeight: "900",
+    marginLeft: 6,
   },
   analysisText: {
     fontSize: 14,
-    lineHeight: 21,
-    color: "#333333",
-    marginBottom: 12,
+    lineHeight: 22,
+    color: "#334155",
+    fontWeight: "600",
   },
 });

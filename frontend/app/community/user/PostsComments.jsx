@@ -5,13 +5,13 @@ import {
   ActivityIndicator,
   FlatList,
   Platform,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getMyPostList, getMyCommentList } from "../../api/communityApi";
 

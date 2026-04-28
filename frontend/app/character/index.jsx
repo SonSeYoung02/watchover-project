@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, UserRoundX } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -27,8 +27,9 @@ export default function CharacterIndex() {
     const loadCharacterImages = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
+        const profileDisabled = await AsyncStorage.getItem('profileCharacterDisabled');
         const storedProfileImage = await AsyncStorage.getItem('selectedProfileImage');
-        setSelectedProfileImage(storedProfileImage);
+        setSelectedProfileImage(profileDisabled === 'true' ? null : storedProfileImage);
 
         if (!token) return;
 
@@ -53,13 +54,25 @@ export default function CharacterIndex() {
       }
 
       await selectMyCharacterImage(imageUrl, token);
+      await AsyncStorage.removeItem('profileCharacterDisabled');
       await AsyncStorage.setItem('selectedProfileImage', imageUrl);
       await AsyncStorage.setItem('characterImage', imageUrl);
       setSelectedProfileImage(imageUrl);
-      Alert.alert('프로필 설정', '선택한 캐릭터가 홈 프로필에 표시됩니다.');
     } catch (error) {
       console.error('프로필 이미지 저장 실패:', error);
       Alert.alert('오류', '프로필 이미지를 저장하지 못했습니다.');
+    }
+  };
+
+  const clearProfileImage = async () => {
+    try {
+      await AsyncStorage.setItem('profileCharacterDisabled', 'true');
+      await AsyncStorage.removeItem('selectedProfileImage');
+      await AsyncStorage.removeItem('characterImage');
+      setSelectedProfileImage(null);
+    } catch (error) {
+      console.error('프로필 캐릭터 선택 해제 실패:', error);
+      Alert.alert('오류', '프로필 캐릭터 선택을 해제하지 못했습니다.');
     }
   };
 
@@ -111,6 +124,22 @@ export default function CharacterIndex() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.savedList}
           >
+            <TouchableOpacity
+              style={[
+                styles.noCharacterButton,
+                !selectedProfileImage && styles.savedImageSelected,
+              ]}
+              onPress={clearProfileImage}
+              activeOpacity={0.8}
+            >
+              <UserRoundX size={30} color="#94A3B8" />
+              <Text style={styles.noCharacterText}>선택 안 함</Text>
+              {!selectedProfileImage && (
+                <View style={styles.selectedBadge}>
+                  <Text style={styles.selectedBadgeText}>선택됨</Text>
+                </View>
+              )}
+            </TouchableOpacity>
             {characterImages.length > 0 ? (
               characterImages.map((imageUrl) => {
                 const isSelected = selectedProfileImage === imageUrl;
@@ -256,6 +285,23 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     overflow: 'hidden',
     backgroundColor: '#F8FAFC',
+  },
+  noCharacterButton: {
+    width: 96,
+    height: 112,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  noCharacterText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '800',
+    marginTop: 8,
   },
   savedImageSelected: {
     borderColor: '#5AA9E6',

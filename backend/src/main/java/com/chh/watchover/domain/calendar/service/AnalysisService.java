@@ -174,7 +174,7 @@ public class AnalysisService {
         String systemPrompt = "당신은 사용자의 대화를 분석하여 주된 감정을 하나로 분류하는 전문가입니다.";
         String userPrompt = "다음 대화 내역을 보고 사용자의 주된 감정을 분석해 주세요.\n"
                 + "조건:\n"
-                + "1. emotion은 반드시 '기쁨', '슬픔', '화남', '혐오' 중 하나만 사용하세요.\n"
+                + "1. emotion은 반드시 '기쁨', '슬픔', '화남', '혐오', '평온', '불안' 중 하나만 사용하세요.\n"
                 + "2. summary는 사용자가 나눈 대화 내용을 1문장으로 요약하세요.\n"
                 + "3. analysis는 해당 감정으로 판단한 이유를 1~2문장으로 설명하세요.\n"
                 + "4. 반드시 JSON만 응답하세요. 형식: {\"emotion\":\"기쁨\",\"summary\":\"...\",\"analysis\":\"...\"}\n\n"
@@ -250,17 +250,23 @@ public class AnalysisService {
         String emotion = rawEmotion.trim();
         String lowerEmotion = emotion.toLowerCase(Locale.ROOT);
 
-        if (emotion.contains("기쁨") || lowerEmotion.contains("happy") || lowerEmotion.contains("joy")) {
+        if (emotion.contains("기쁨") || emotion.contains("행복") || lowerEmotion.contains("happy") || lowerEmotion.contains("joy")) {
             return EmotionType.기쁨.name();
         }
         if (emotion.contains("슬픔") || lowerEmotion.contains("sad")) {
             return EmotionType.슬픔.name();
         }
-        if (emotion.contains("화남") || emotion.contains("분노") || lowerEmotion.contains("anger")) {
+        if (emotion.contains("화남") || emotion.contains("분노") || lowerEmotion.contains("anger") || lowerEmotion.contains("angry")) {
             return EmotionType.화남.name();
         }
         if (emotion.contains("혐오") || lowerEmotion.contains("disgust")) {
             return EmotionType.혐오.name();
+        }
+        if (emotion.contains("평온") || emotion.contains("안정") || emotion.contains("차분") || lowerEmotion.contains("calm") || lowerEmotion.contains("peace")) {
+            return EmotionType.평온.name();
+        }
+        if (emotion.contains("불안") || emotion.contains("걱정") || emotion.contains("두려") || lowerEmotion.contains("anxiety") || lowerEmotion.contains("anxious") || lowerEmotion.contains("worried") || lowerEmotion.contains("fear")) {
+            return EmotionType.불안.name();
         }
 
         return EmotionType.슬픔.name();

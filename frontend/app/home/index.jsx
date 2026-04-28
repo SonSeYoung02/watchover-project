@@ -1,5 +1,5 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { BotMessageSquare, ChevronRight, Quote, Users } from 'lucide-react-native';
+import { BotMessageSquare, ChevronRight, CircleHelp, Quote, Users } from 'lucide-react-native';
 import {
   Dimensions,
   Image,
@@ -99,8 +99,11 @@ const MainHome = () => {
         console.log('👤 유저 정보 응답:', JSON.stringify(result, null, 2));
         if (result && result.code === 'SUCCESS' && result.data) {
           setUserName(result.data.nickname || result.data.loginId || '유저');
+          const profileDisabled = await AsyncStorage.getItem('profileCharacterDisabled');
           const selectedImage = await AsyncStorage.getItem('selectedProfileImage');
-          if (selectedImage) {
+          if (profileDisabled === 'true') {
+            setCharacterImage(null);
+          } else if (selectedImage) {
             setCharacterImage(selectedImage);
           } else if (result.data.characterImage) {
             setCharacterImage(result.data.characterImage);
@@ -157,6 +160,12 @@ const MainHome = () => {
     useCallback(() => {
       const loadSelectedProfileImage = async () => {
         try {
+          const profileDisabled = await AsyncStorage.getItem('profileCharacterDisabled');
+          if (profileDisabled === 'true') {
+            setCharacterImage(null);
+            return;
+          }
+
           const selectedImage = await AsyncStorage.getItem('selectedProfileImage');
           if (selectedImage) {
             setCharacterImage(selectedImage);
@@ -358,26 +367,24 @@ const MainHome = () => {
               </View>
               <ChevronRight size={18} color="#C8D8E8" />
             </TouchableOpacity>
-          </View>
-        </View>
 
-        {/* ── 섹션 5: 배너 ── */}
-        <View style={styles.section}>
-          <SectionHeader title="마음 돌봄" />
-          <View style={styles.bannerCard}>
-            <View>
-              <Text style={styles.bannerTitle}>오늘 기분은 어떤가요?</Text>
-              <Text style={styles.bannerSub}>AI와 대화하며 마음을 돌봐요</Text>
-            </View>
             <TouchableOpacity
-              style={styles.bannerBtn}
-              onPress={() => navigation.navigate('AiChat')}
-              activeOpacity={0.8}
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('Guide')}
+              activeOpacity={0.85}
             >
-              <Text style={styles.bannerBtnText}>대화 시작</Text>
+              <View style={[styles.iconCircle, { backgroundColor: '#EAF4FD' }]}>
+                <CircleHelp size={28} color="#5AA9E6" />
+              </View>
+              <View style={styles.actionTextWrap}>
+                <Text style={styles.actionTitle}>앱 사용 가이드</Text>
+                <Text style={styles.actionSub}>기능을 빠르게 알아봐요</Text>
+              </View>
+              <ChevronRight size={18} color="#C8D8E8" />
             </TouchableOpacity>
           </View>
         </View>
+
       </ScrollView>
 
       <Navigation />
@@ -664,34 +671,4 @@ const styles = StyleSheet.create({
     color: '#5AA9E6',
   },
 
-  /* Banner */
-  bannerCard: {
-    backgroundColor: '#5AA9E6',
-    borderRadius: 18,
-    padding: 22,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  bannerTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#ffffff',
-  },
-  bannerSub: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
-  },
-  bannerBtn: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  bannerBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#5AA9E6',
-  },
 });

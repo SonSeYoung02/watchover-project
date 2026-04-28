@@ -29,7 +29,7 @@ const GUIDE_ITEMS = [
   {
     icon: CalendarDays,
     color: "#7CC9A7",
-    title: "달력 및 통계",
+    title: "달력",
     description:
       "저장된 감정을 날짜별로 확인하고, 월별 감정 흐름과 선택한 날짜의 감정 기록을 볼 수 있습니다.",
   },
