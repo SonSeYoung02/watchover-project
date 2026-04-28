@@ -51,80 +51,57 @@ public class CharacterService {
      * GPT-4o로 사진의 시각적 특징을 추출하고, DALL-E 3로 캐릭터 이미지를 생성합니다.
      *
      * @param userPhoto 캐릭터 생성에 사용할 사용자 사진 파일
-     * @param userId    캐릭터를 생성할 사용자의 고유 ID
+     * @param loginId   인증 토큰에서 추출한 사용자 loginId
      * @return S3에 업로드된 캐릭터 이미지의 URL
      */
     @Transactional
-    public String createMultimodalCharacter(MultipartFile userPhoto, Long userId) {
-        /*
-        =================================================
-        1단계: 기본 프롬프트 로드
-        =================================================
-         */
-        log.info("---- 프롬프트 로드 ----");
-        String baseStylePrompt = loadPromptFromFile();
+    public String createMultimodalCharacter(MultipartFile userPhoto, String loginId) {
+        // 0단계: 사용자 식별 (Principal 기반)
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> {
+                    log.warn("[Character] 사용자 미존재 loginId={}", loginId);
+                    return new OpenAiApiException(ErrorCode.USER_NOT_FOUND);
+                });
+        log.info("[Character] 캐릭터 생성 시작 userId={}, loginId={}", user.getUserId(), loginId);
 
-        /*
-        =================================================
-        2단계: GPT-4o 사진 분석
-        =================================================
-         */
-        log.info("---- GPT-4o 사진 분석 ----");
-        // 이미지 객체가 비어있는 경우, 이미지 객체 안에 데이터가 없는 경우 예외처리
-        if (userPhoto == null || userPhoto.isEmpty()) {throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DATA_EMPTY);}
-        String visualFeatures = analyzePhotoWithGpt4o(userPhoto);
-        log.info("추출된 특징: {}", visualFeatures);
-
-        /*
-        =================================================
-        3단계: DALL-E 3 캐릭터 생성
-        =================================================
-         */
-        // GPT에게 받은 특징 데이터가 없는 경우 예외처리
-        if (visualFeatures.isEmpty()){throw new OpenAiApiException(ErrorCode.OPENAI_API_ERROR);}
-        String finalPrompt = String.format("%s, based on these visual features: %s", baseStylePrompt, visualFeatures);
-        String generatedImageUrl = callOpenAiDallE3(finalPrompt);
-        log.info("생성된 이미지 URL: {}", generatedImageUrl);
-
-        /*
-        =================================================
-        4단계: S3 업로드
-        =================================================
-         */
-        log.info("--- S3에 저장중 ---");
-        byte[] imageBytes;
-        try {
-            java.net.URL url = new java.net.URL(generatedImageUrl);
-            try (java.io.InputStream in = url.openStream()) {
-                imageBytes = in.readAllBytes();
-            }
-            // 이미지가 비어있는 경우 에러발생
-            if (imageBytes.length == 0) {
-                throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DATA_EMPTY);
-            }
-        } catch (OpenAiApiException e) {
-            throw e;
-        } catch (Exception e){
-            throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DOWNLOAD_FAILED);
+        // 1단계: 입력 이미지 검증
+        if (userPhoto == null || userPhoto.isEmpty()) {
+            log.warn("[Character] 업로드 이미지 비어있음");
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DATA_EMPTY);
         }
 
+        // 2단계: 기본 프롬프트 로드
+        String baseStylePrompt = loadPromptFromFile();
+        log.info("[Character] 프롬프트 로드 완료 length={}", baseStylePrompt.length());
+
+        // 3단계: GPT-4o 사진 분석
+        String visualFeatures = analyzePhotoWithGpt4o(userPhoto);
+        if (visualFeatures.isBlank()) {
+            log.error("[Character] GPT-4o 응답이 비어있음");
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_CONTENT_EMPTY);
+        }
+        log.info("[Character] 시각 특징 추출 완료: {}", visualFeatures);
+
+        // 4단계: DALL-E 3 캐릭터 생성
+        String finalPrompt = String.format("%s, based on these visual features: %s", baseStylePrompt, visualFeatures);
+        String generatedImageUrl = callOpenAiDallE3(finalPrompt);
+        log.info("[Character] DALL-E 3 이미지 URL 수신: {}", generatedImageUrl);
+
+        // 5단계: 생성 이미지 다운로드
+        byte[] imageBytes = downloadImage(generatedImageUrl);
+
+        // 6단계: S3 업로드
         String fileName = "characters/" + UUID.randomUUID() + ".png";
         String s3Url;
         try {
             s3Url = s3UploadService.upload(imageBytes, fileName);
-            log.info("S3 업로드 성공: {}", s3Url);
+            log.info("[Character] S3 업로드 성공 url={}", s3Url);
         } catch (Exception e) {
+            log.error("[Character] S3 업로드 실패 fileName={}", fileName, e);
             throw new OpenAiApiException(ErrorCode.OPENAI_API_S3_SAVE_FAILED);
         }
 
-        /*
-        =================================================
-        5단계: DB에 데이터 저장
-        =================================================
-         */
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new OpenAiApiException(ErrorCode.USER_NOT_FOUND));
-
+        // 7단계: DB 저장
         CharacterProfileEntity profile = CharacterProfileEntity.builder()
                 .user(user)
                 .image(s3Url)
@@ -132,23 +109,42 @@ public class CharacterService {
         try {
             characterRepository.save(profile);
         } catch (Exception e) {
-            // DB에 저장을 실패하는 경우 에러처리
+            log.error("[Character] DB 저장 실패 userId={}", user.getUserId(), e);
             throw new OpenAiApiException(ErrorCode.OPENAI_API_DB_SAVE_FAILED);
         }
-        log.info("DB 기록 성공: userId={}", userId);
+        log.info("[Character] DB 기록 성공 userId={}", user.getUserId());
 
-        return s3Url; // 성공 시 여기서 즉시 반환
+        return s3Url;
+    }
+
+    private byte[] downloadImage(String imageUrl) {
+        try {
+            java.net.URL url = new java.net.URL(imageUrl);
+            try (java.io.InputStream in = url.openStream()) {
+                byte[] bytes = in.readAllBytes();
+                if (bytes.length == 0) {
+                    log.error("[Character] 이미지 다운로드 결과 0바이트 url={}", imageUrl);
+                    throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DATA_EMPTY);
+                }
+                return bytes;
+            }
+        } catch (OpenAiApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[Character] 이미지 다운로드 실패 url={}", imageUrl, e);
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DOWNLOAD_FAILED);
+        }
     }
 
     private String analyzePhotoWithGpt4o(MultipartFile photo) {
         String url = "https://api.openai.com/v1/chat/completions";
 
-        // 이미지 바이트 추출
         byte[] imageBytes;
         try {
             imageBytes = photo.getBytes();
         } catch (IOException e) {
-            throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DATA_EMPTY);
+            log.error("[Character] MultipartFile.getBytes 실패", e);
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_PARSE_FAILED);
         }
         if (imageBytes.length == 0) {
             throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DATA_EMPTY);
@@ -182,36 +178,45 @@ public class CharacterService {
         message.set("content", content);
         rootNode.set("messages", mapper.createArrayNode().add(message));
 
-        HttpEntity<String> entity = new HttpEntity<>(mapper.writeValueAsString(rootNode), headers);
-
-        // GPT-4o API 호출 및 응답 파싱
+        String requestJson;
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
-            // 응답 바디가 없는 경우 에러처리
+            requestJson = mapper.writeValueAsString(rootNode);
+        } catch (Exception e) {
+            log.error("[Character] GPT-4o 요청 JSON 직렬화 실패", e);
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_REQUEST_BUILD_FAILED);
+        }
+        HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
+
+        ResponseEntity<Map> response;
+        try {
+            response = restTemplate.postForEntity(url, entity, Map.class);
+        } catch (Exception e) {
+            log.error("[Character] GPT-4o API 호출 실패", e);
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_GPT_CALL_FAILED);
+        }
+
+        try {
             if (response.getBody() == null) {
                 throw new OpenAiApiException(ErrorCode.OPENAI_API_REQUEST_NOT_FOUND_BODY);
             }
             List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
-            // 응답 choices가 없거나 비어있는 경우 에러처리
             if (choices == null || choices.isEmpty()) {
-                throw new OpenAiApiException(ErrorCode.OPENAI_API_ERROR);
+                throw new OpenAiApiException(ErrorCode.OPENAI_API_CHOICES_EMPTY);
             }
             Map<String, Object> messageBody = (Map<String, Object>) choices.get(0).get("message");
-            // 메시지 바디가 없는 경우 에러처리
             if (messageBody == null) {
-                throw new OpenAiApiException(ErrorCode.OPENAI_API_ERROR);
+                throw new OpenAiApiException(ErrorCode.OPENAI_API_MESSAGE_NOT_FOUND);
             }
             String result = (String) messageBody.get("content");
-            // 분석 결과가 없거나 빈 경우 에러처리
             if (result == null || result.isBlank()) {
-                throw new OpenAiApiException(ErrorCode.OPENAI_API_ERROR);
+                throw new OpenAiApiException(ErrorCode.OPENAI_API_CONTENT_EMPTY);
             }
             return result;
         } catch (OpenAiApiException e) {
             throw e;
         } catch (Exception e) {
-            // GPT-4o API 호출 자체가 실패한 경우 에러처리
-            throw new OpenAiApiException(ErrorCode.OPENAI_API_ERROR);
+            log.error("[Character] GPT-4o 응답 파싱 실패 body={}", response.getBody(), e);
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_RESPONSE_PARSE_FAILED);
         }
     }
 
@@ -227,20 +232,23 @@ public class CharacterService {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
-        // DALL-E 3 API 호출 및 응답 파싱
+        ResponseEntity<Map> response;
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
-            // 응답 바디가 없는 경우 에러처리
+            response = restTemplate.postForEntity(url, entity, Map.class);
+        } catch (Exception e) {
+            log.error("[Character] DALL-E 3 API 호출 실패", e);
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_DALLE_CALL_FAILED);
+        }
+
+        try {
             if (response.getBody() == null) {
                 throw new OpenAiApiException(ErrorCode.OPENAI_API_REQUEST_NOT_FOUND_BODY);
             }
             List<Map<String, Object>> data = (List<Map<String, Object>>) response.getBody().get("data");
-            // 이미지 데이터가 없거나 비어있는 경우 에러처리
             if (data == null || data.isEmpty()) {
-                throw new OpenAiApiException(ErrorCode.OPENAI_API_ERROR);
+                throw new OpenAiApiException(ErrorCode.OPENAI_API_RESPONSE_PARSE_FAILED);
             }
             String imageUrl = (String) data.get(0).get("url");
-            // 이미지 URL이 없거나 빈 경우 에러처리
             if (imageUrl == null || imageUrl.isBlank()) {
                 throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DOWNLOAD_FAILED);
             }
@@ -248,27 +256,27 @@ public class CharacterService {
         } catch (OpenAiApiException e) {
             throw e;
         } catch (Exception e) {
-            // DALL-E 3 API 호출 자체가 실패한 경우 에러처리
-            throw new OpenAiApiException(ErrorCode.OPENAI_API_ERROR);
+            log.error("[Character] DALL-E 3 응답 파싱 실패 body={}", response.getBody(), e);
+            throw new OpenAiApiException(ErrorCode.OPENAI_API_RESPONSE_PARSE_FAILED);
         }
     }
 
     private String loadPromptFromFile() {
-        Resource resource = resourceLoader.getResource("classpath:prompts/base-prompt");
-        // 1. 파일이 없는 경우
+        Resource resource = resourceLoader.getResource("classpath:prompts/base-prompt.md");
         if (!resource.exists()) {
+            log.error("[Character] 프롬프트 리소스를 찾을 수 없음 path=classpath:prompts/base-prompt");
             throw new OpenAiApiException(ErrorCode.OPENAI_API_PROMPT_NOT_FOUND);
         }
         try {
-            String content = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-            // 2. 파일은 있는데 내용이 없는 경우
+            String content = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8).trim();
             if (content.isBlank()) {
                 throw new OpenAiApiException(ErrorCode.OPENAI_API_PROMPT_EMPTY);
             }
-            // 성공
-            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8).trim();
+            return content;
+        } catch (OpenAiApiException e) {
+            throw e;
         } catch (IOException e) {
-            // 3. 읽는 도중에 알수 없는 에러 발생
+            log.error("[Character] 프롬프트 파일 읽기 실패", e);
             throw new OpenAiApiException(ErrorCode.OPENAI_API_ERROR);
         }
     }

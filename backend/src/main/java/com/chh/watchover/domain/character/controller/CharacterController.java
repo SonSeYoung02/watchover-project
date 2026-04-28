@@ -16,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
+
 @Tag(name = "Character", description = "AI 캐릭터 생성 API")
 @RestController
 @RequestMapping("/api/characters")
@@ -60,10 +62,9 @@ public class CharacterController {
     public ResponseEntity<ApiResponse<CharacterResponse>> generateCharacter(
             @Parameter(description = "캐릭터 생성에 사용할 원본 이미지 파일 (JPEG/PNG)", required = true)
             @RequestParam("image") MultipartFile image,
-            @Parameter(description = "캐릭터를 소유할 사용자 ID", required = true)
-            @RequestParam("userId") Long userId
+            Principal principal
     ) {
-        String s3ImageUrl = characterService.createMultimodalCharacter(image, userId);
+        String s3ImageUrl = characterService.createMultimodalCharacter(image, principal.getName());
         return ResponseEntity.ok(ApiResponse.success(new CharacterResponse(s3ImageUrl)));
     }
 }

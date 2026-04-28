@@ -141,3 +141,16 @@ export const getMyCommentList = async (token, page = 0, size = 20) => {
     throw error;
   }
 };
+
+export const getMyBookmarkList = async (token, page = 0, size = 20) => {
+  try {
+    const response = await client.get('/api/community/bookmark/list', {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { page, size },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('나의 북마크 로드 에러:', error);
+    throw error;
+  }
+};

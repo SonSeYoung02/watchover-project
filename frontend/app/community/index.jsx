@@ -25,7 +25,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { getPostList, getPopularPostList } from "../api/communityApi";
+import { getPostList, getPopularPostList, getMyBookmarkList } from "../api/communityApi";
 
 export default function CommunityScreen() {
   const navigation = useNavigation();
@@ -54,14 +54,10 @@ export default function CommunityScreen() {
 
         console.log(`📍 [${tabName}] API 호출 시작`);
 
-        if (tabName === "북마크") {
-          const stored = await AsyncStorage.getItem("bookmarkedPosts");
-          setPosts(stored ? JSON.parse(stored) : []);
-          return;
-        }
-
         let result;
-        if (tabName === "인기글") {
+        if (tabName === "북마크") {
+          result = await getMyBookmarkList(token);
+        } else if (tabName === "인기글") {
           result = await getPopularPostList(token);
         } else {
           result = await getPostList(token);
@@ -69,6 +65,10 @@ export default function CommunityScreen() {
 
         const data = result?.data?.listPost || result?.listPost || [];
         setPosts(data);
+
+        if (tabName === "북마크") {
+          await AsyncStorage.setItem("bookmarkedPosts", JSON.stringify(data));
+        }
       } catch (error) {
         console.error(`${tabName} 로드 실패:`, error);
         if (error.response?.status === 403) {

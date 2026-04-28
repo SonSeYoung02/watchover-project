@@ -14,9 +14,6 @@ export const generateCharacter = async (imageUri, token) => {
     type: type,
   });
 
-  // ✅ [테스트용 강제 주입] 서버가 userId가 없다고 화내니까 일단 "1"을 넣어서 보냅니다.
-  formData.append("userId", "1");
-
   try {
     const response = await client.post("/api/characters/generate", formData, {
       headers: {
@@ -26,7 +23,14 @@ export const generateCharacter = async (imageUri, token) => {
     });
     return response.data;
   } catch (error) {
-    console.error("캐릭터 생성 API 에러:", error);
+    const apiBody = error?.response?.data;
+    console.error(
+      "캐릭터 생성 API 에러:",
+      error?.response?.status,
+      apiBody?.code,
+      apiBody?.message,
+      error?.message,
+    );
     throw error;
   }
 };

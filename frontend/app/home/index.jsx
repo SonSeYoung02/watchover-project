@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { BotMessageSquare, ChevronRight, Quote, Users } from 'lucide-react-native';
 import {
   Dimensions,
+  Image,
   Platform,
   ScrollView,
   StatusBar,
@@ -79,6 +80,7 @@ const getStreak = (dates) => {
 const MainHome = () => {
   const navigation = useNavigation();
   const [userName, setUserName] = useState('');
+  const [characterImage, setCharacterImage] = useState(null);
   const [quotes, setQuotes] = useState([]);
   const [attendedDates, setAttendedDates] = useState([]);
   const [isCheckedToday, setIsCheckedToday] = useState(false);
@@ -97,6 +99,13 @@ const MainHome = () => {
         console.log('👤 유저 정보 응답:', JSON.stringify(result, null, 2));
         if (result && result.code === 'SUCCESS' && result.data) {
           setUserName(result.data.nickname || result.data.loginId || '유저');
+          if (result.data.characterImage) {
+            setCharacterImage(result.data.characterImage);
+            await AsyncStorage.setItem('characterImage', result.data.characterImage);
+          } else {
+            const cached = await AsyncStorage.getItem('characterImage');
+            if (cached) setCharacterImage(cached);
+          }
         }
       } catch (error) {
         console.error('유저 정보 로드 실패:', error);
@@ -170,9 +179,21 @@ const MainHome = () => {
         {/* ── 섹션 1: 유저 카드 ── */}
         <View style={styles.section}>
           <View style={styles.userCard}>
-            <View style={styles.userAvatar}>
-              <Text style={styles.userAvatarText}>{userName[0]}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.userAvatar}
+              onPress={() => navigation.navigate('Character')}
+              activeOpacity={0.85}
+            >
+              {characterImage ? (
+                <Image
+                  source={{ uri: characterImage }}
+                  style={styles.userAvatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.userAvatarText}>{userName ? userName[0] : ''}</Text>
+              )}
+            </TouchableOpacity>
             <View style={styles.userInfo}>
               <Text style={styles.userGreeting}>
                 <Text style={styles.userNameHighlight}>{userName}</Text>님,
@@ -412,6 +433,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#BAE6FD',
+    overflow: 'hidden',
+  },
+  userAvatarImage: {
+    width: '100%',
+    height: '100%',
   },
   userAvatarText: {
     fontSize: 30,

@@ -126,24 +126,6 @@ export default function PostDetail() {
         const confirmed = result.data.isBookmark;
         setIsBookmarked(confirmed);
         await AsyncStorage.setItem(`bookmarked_${id}`, String(confirmed));
-
-        // 커뮤니티 북마크 탭용 로컬 목록 동기화
-        const stored = await AsyncStorage.getItem('bookmarkedPosts');
-        let list = stored ? JSON.parse(stored) : [];
-        if (confirmed) {
-          if (post && !list.find(p => p.postId === post.postId)) {
-            list.push({
-              postId: post.postId,
-              title: post.title,
-              content: post.content,
-              likeCount: post.likeCount,
-              createdAt: post.createdAt,
-            });
-          }
-        } else {
-          list = list.filter(p => p.postId !== post.postId);
-        }
-        await AsyncStorage.setItem('bookmarkedPosts', JSON.stringify(list));
       }
     } catch (error) {
       setIsBookmarked(!newIsBookmarked);

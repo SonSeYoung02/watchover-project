@@ -33,6 +33,11 @@ public enum ErrorCode {
     OPENAI_API_S3_SAVE_FAILED("CB006", "S3에 이미지 저장 실패", HttpStatus.INSUFFICIENT_STORAGE),
     OPENAI_API_DB_SAVE_FAILED("CB007", "DB에 URL 저장 실패", HttpStatus.INTERNAL_SERVER_ERROR),
     OPENAI_API_REQUEST_NOT_FOUND_BODY("CB008", "GPT 응답 바디가 존재하지 않습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    OPENAI_API_GPT_CALL_FAILED("CB012", "GPT-4o 사진 분석 호출에 실패했습니다.", HttpStatus.BAD_GATEWAY),
+    OPENAI_API_DALLE_CALL_FAILED("CB013", "DALL-E 3 캐릭터 생성 호출에 실패했습니다.", HttpStatus.BAD_GATEWAY),
+    OPENAI_API_IMAGE_PARSE_FAILED("CB014", "업로드된 이미지를 읽을 수 없습니다.", HttpStatus.BAD_REQUEST),
+    OPENAI_API_REQUEST_BUILD_FAILED("CB015", "OpenAI 요청 본문 직렬화에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    OPENAI_API_RESPONSE_PARSE_FAILED("CB016", "OpenAI 응답 파싱에 실패했습니다.", HttpStatus.BAD_GATEWAY),
 
     // ==================== Attendance ====================
     ALREADY_CHECKED_IN("A001", "오늘 이미 출석 체크를 하셨습니다.", HttpStatus.CONFLICT),

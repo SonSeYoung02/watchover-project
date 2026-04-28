@@ -57,15 +57,17 @@ export default function CharacterCreate() {
     } catch (error) {
       console.log("❌ 캐릭터 생성 에러 발생");
 
-      if (error.response) {
-        console.log("상태 코드:", error.response.status);
-      } else {
-        console.log("에러 메시지:", error.message);
-      }
+      const status = error?.response?.status;
+      const apiBody = error?.response?.data;
+      const code = apiBody?.code;
+      const message = apiBody?.message;
+      console.log("상태 코드:", status, "에러 코드:", code, "메시지:", message);
 
       Alert.alert(
         "생성 실패",
-        "이미지 분석 시간이 초과되었거나 서버 연결이 원활하지 않습니다.",
+        message
+          ? `${message}${code ? ` (${code})` : ""}`
+          : "이미지 분석 시간이 초과되었거나 서버 연결이 원활하지 않습니다.",
       );
       navigation.goBack();
     }

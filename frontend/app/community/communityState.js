@@ -3,4 +3,4 @@ export let globalLikeCountState = {};
 export let globalViewCountState = {};
 export let globalCommentCountState = {};
 export let globalCommentStore = {};
-export let globalBookmarkState = { 1: true, 3: true };
+export let globalBookmarkState = {};
