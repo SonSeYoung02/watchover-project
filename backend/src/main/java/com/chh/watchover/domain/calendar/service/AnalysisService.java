@@ -99,6 +99,18 @@ public class AnalysisService {
     }
 
     @Transactional(readOnly = true)
+    public List<EmotionStatResponse> getDailyEmotionStats(String loginId, LocalDate date) {
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+
+        LocalDate targetDate = date == null ? LocalDate.now() : date;
+        LocalDateTime start = targetDate.atStartOfDay();
+        LocalDateTime end = targetDate.plusDays(1).atStartOfDay();
+
+        return calendarLogRepository.getDailyStats(user, start, end);
+    }
+
+    @Transactional(readOnly = true)
     public List<EmotionLogResponse> getMonthlyEmotionLogs(String loginId, int year, int month) {
         UserEntity user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));

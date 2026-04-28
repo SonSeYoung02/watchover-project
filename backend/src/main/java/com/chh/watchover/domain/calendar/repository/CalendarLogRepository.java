@@ -23,6 +23,17 @@ public interface CalendarLogRepository extends JpaRepository<CalendarLogEntity, 
             @Param("year") int year,
             @Param("month") int month);
 
+    @Query("SELECT new com.chh.watchover.domain.calendar.model.dto.EmotionStatResponse(c.emotion, COUNT(c)) " +
+            "FROM CalendarLogEntity c " +
+            "WHERE c.user = :user " +
+            "AND c.createdAt >= :start " +
+            "AND c.createdAt < :end " +
+            "GROUP BY c.emotion")
+    List<EmotionStatResponse> getDailyStats(
+            @Param("user") UserEntity user,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
     Optional<CalendarLogEntity> findFirstByUserAndCreatedAtBetween(
             UserEntity user,
             LocalDateTime start,

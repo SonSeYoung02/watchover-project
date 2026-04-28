@@ -69,6 +69,18 @@ public class AnalysisController {
         return ApiResponse.success(stats);
     }
 
+    @Operation(summary = "일별 감정 통계 조회", description = "현재 로그인된 사용자의 지정 날짜 감정 유형별 통계를 조회합니다.")
+    @GetMapping("/stats/daily")
+    public ApiResponse<List<EmotionStatResponse>> getDailyStats(
+            @AuthenticationPrincipal String loginId,
+            @Parameter(description = "조회 날짜. 생략 시 오늘 날짜")
+            @RequestParam(required = false) LocalDate date
+    ) {
+        LocalDate targetDate = date == null ? LocalDate.now() : date;
+        List<EmotionStatResponse> stats = analysisService.getDailyEmotionStats(loginId, targetDate);
+        return ApiResponse.success(stats);
+    }
+
     @GetMapping("/logs")
     public ApiResponse<List<EmotionLogResponse>> getMonthlyLogs(
             @AuthenticationPrincipal String loginId,

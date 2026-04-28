@@ -187,6 +187,23 @@ class AnalysisServiceTest {
     }
 
     @Test
+    void getDailyEmotionStats_returnsStats_whenUserExists() {
+        UserEntity user = mock(UserEntity.class);
+        List<EmotionStatResponse> expected = List.of(
+                new EmotionStatResponse(EmotionType.화남, 1L)
+        );
+
+        when(userRepository.findByLoginId("user1")).thenReturn(Optional.of(user));
+        when(calendarLogRepository.getDailyStats(eq(user), any(), any())).thenReturn(expected);
+
+        List<EmotionStatResponse> result = analysisService.getDailyEmotionStats("user1", LocalDate.of(2026, 4, 1));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getEmotion()).isEqualTo(EmotionType.화남);
+        assertThat(result.get(0).getCount()).isEqualTo(1L);
+    }
+
+    @Test
     void getMonthlyEmotionLogs_returnsLogs_whenUserExists() {
         UserEntity user = mock(UserEntity.class);
         CalendarLogEntity log = new CalendarLogEntity();

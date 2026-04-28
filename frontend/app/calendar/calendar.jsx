@@ -15,15 +15,17 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PieChart } from "react-native-gifted-charts";
+import { LineChart, PieChart } from "react-native-gifted-charts";
 
 import {
   getDailyAnalysis,
+  getDailyStatistics,
   getMonthlyEmotionLogs,
   getMonthlyStatistics,
 } from "../api/calendarApi";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const STATS_CARD_WIDTH = Math.min(300, SCREEN_WIDTH * 0.76);
 
 const EMOTION_COLORS = {
   기쁨: "#5AA9E6",
@@ -34,6 +36,8 @@ const EMOTION_COLORS = {
   혐오: "#B8A4D8",
   불안: "#F6C177",
 };
+
+const EMOTION_ORDER = ["기쁨", "슬픔", "화남", "혐오", "평온", "불안"];
 
 const normalizeEmotion = (emotion) => {
   if (!emotion) return null;
@@ -50,11 +54,13 @@ export default function Calendar() {
   const navigation = useNavigation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [chartData, setChartData] = useState([]);
+  const [monthlyChartData, setMonthlyChartData] = useState([]);
+  const [dailyChartData, setDailyChartData] = useState([]);
   const [emotionLogsByDate, setEmotionLogsByDate] = useState({});
   const [dailyAnalysis, setDailyAnalysis] = useState(null);
   const [dailyLoading, setDailyLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [dailyStatsLoading, setDailyStatsLoading] = useState(false);
 
   const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const currentYear = currentDate.getFullYear();
@@ -96,26 +102,25 @@ export default function Calendar() {
       }, {});
       setEmotionLogsByDate(logsByDate);
 
-      const formattedData = stats
-        .filter((item) => Number(item.count) > 0)
-        .map((item) => {
-          const emotion = normalizeEmotion(item.emotion);
-          return {
-            value: Number(item.count),
-            label: emotion,
-            color: EMOTION_COLORS[emotion] || "#E6F2FC",
-            gradientCenterColor: EMOTION_COLORS[emotion] || "#8EC9F8",
-          };
-        });
+      const countByEmotion = stats.reduce((acc, item) => {
+        const emotion = normalizeEmotion(item.emotion);
+        acc[emotion] = Number(item.count);
+        return acc;
+      }, {});
+      const formattedData = EMOTION_ORDER.map((emotion) => ({
+        value: countByEmotion[emotion] || 0,
+        label: emotion,
+        dataPointText: String(countByEmotion[emotion] || 0),
+      }));
 
-      setChartData(formattedData);
+      setMonthlyChartData(formattedData);
     } catch (error) {
       console.log("통계 데이터 로딩 오류");
       if (error.response) {
         console.log("상태 코드:", error.response.status);
         console.log("서버 응답:", JSON.stringify(error.response.data));
       }
-      setChartData([]);
+      setMonthlyChartData([]);
       setEmotionLogsByDate({});
     } finally {
       setLoading(false);
@@ -162,8 +167,42 @@ export default function Calendar() {
     }
   };
 
+  const fetchDailyStatistics = async (date) => {
+    setDailyStatsLoading(true);
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const result = await getDailyStatistics(token, formatDate(date));
+      const stats = Array.isArray(result?.data) ? result.data : [];
+      const formattedData = stats
+        .filter((item) => Number(item.count) > 0)
+        .map((item) => {
+          const emotion = normalizeEmotion(item.emotion);
+          return {
+            value: Number(item.count),
+            label: emotion,
+            color: EMOTION_COLORS[emotion] || "#E6F2FC",
+            gradientCenterColor: EMOTION_COLORS[emotion] || "#8EC9F8",
+          };
+        });
+
+      setDailyChartData(formattedData);
+    } catch (error) {
+      console.log("일별 통계 데이터 로딩 오류");
+      if (error.response) {
+        console.log("상태 코드:", error.response.status);
+        console.log("서버 응답:", JSON.stringify(error.response.data));
+      }
+      setDailyChartData([]);
+    } finally {
+      setDailyStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchDailyAnalysis(selectedDate);
+    fetchDailyStatistics(selectedDate);
   }, [selectedDate]);
 
   const handleDatePress = (day) => {
@@ -289,46 +328,107 @@ export default function Calendar() {
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.statsTitle}>{currentMonth + 1}월 감정 통계</Text>
-          {loading ? (
-            <ActivityIndicator
-              size="large"
-              color="#5AA9E6"
-              style={{ marginVertical: 30 }}
-            />
-          ) : chartData.length > 0 ? (
-            <View style={styles.chartWrapper}>
-              <PieChart
-                data={chartData}
-                donut
-                radius={100}
-                innerRadius={65}
-                centerLabelComponent={() => (
-                  <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-                    분석완료
-                  </Text>
-                )}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.statsCardsRow}
+        >
+          <View style={styles.statCard}>
+            <Text style={styles.statsTitle}>{currentMonth + 1}월 감정 통계</Text>
+            {loading ? (
+              <ActivityIndicator
+                size="large"
+                color="#5AA9E6"
+                style={{ marginVertical: 30 }}
               />
-              <View style={styles.legendContainer}>
-                {chartData.map((item, i) => (
-                  <View key={i} style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.legendDot,
-                        { backgroundColor: item.color },
-                      ]}
-                    />
-                    <Text style={styles.legendLabel}>{item.label}</Text>
-                    <Text style={styles.legendValue}>{item.value}회</Text>
-                  </View>
-                ))}
+            ) : monthlyChartData.some((item) => item.value > 0) ? (
+              <View style={styles.chartWrapper}>
+                <LineChart
+                  data={monthlyChartData}
+                  curved
+                  areaChart
+                  height={170}
+                  width={STATS_CARD_WIDTH - 70}
+                  thickness={3}
+                  color="#5AA9E6"
+                  startFillColor="#5AA9E6"
+                  endFillColor="#ffffff"
+                  startOpacity={0.22}
+                  endOpacity={0.02}
+                  dataPointsColor="#5AA9E6"
+                  yAxisColor="#E2E8F0"
+                  xAxisColor="#E2E8F0"
+                  rulesColor="#F1F5F9"
+                  yAxisTextStyle={styles.axisText}
+                  xAxisLabelTextStyle={styles.axisText}
+                  noOfSections={4}
+                />
+                <View style={styles.legendContainer}>
+                  {monthlyChartData
+                    .filter((item) => item.value > 0)
+                    .map((item, i) => (
+                      <View key={i} style={styles.legendItem}>
+                        <View
+                          style={[
+                            styles.legendDot,
+                            {
+                              backgroundColor:
+                                EMOTION_COLORS[item.label] || "#E6F2FC",
+                            },
+                          ]}
+                        />
+                        <Text style={styles.legendLabel}>{item.label}</Text>
+                        <Text style={styles.legendValue}>{item.value}회</Text>
+                      </View>
+                    ))}
+                </View>
               </View>
-            </View>
-          ) : (
-            <Text style={styles.loadingText}>기록된 데이터가 없습니다.</Text>
-          )}
-        </View>
+            ) : (
+              <Text style={styles.loadingText}>기록된 데이터가 없습니다.</Text>
+            )}
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statsTitle}>
+              {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일 감정 통계
+            </Text>
+            {dailyStatsLoading ? (
+              <ActivityIndicator
+                size="large"
+                color="#5AA9E6"
+                style={{ marginVertical: 30 }}
+              />
+            ) : dailyChartData.length > 0 ? (
+              <View style={styles.chartWrapper}>
+                <PieChart
+                  data={dailyChartData}
+                  donut
+                  radius={82}
+                  innerRadius={52}
+                  centerLabelComponent={() => (
+                    <Text style={styles.donutCenterText}>일 통계</Text>
+                  )}
+                />
+                <View style={styles.legendContainer}>
+                  {dailyChartData.map((item, i) => (
+                    <View key={i} style={styles.legendItem}>
+                      <View
+                        style={[
+                          styles.legendDot,
+                          { backgroundColor: item.color },
+                        ]}
+                      />
+                      <Text style={styles.legendLabel}>{item.label}</Text>
+                      <Text style={styles.legendValue}>{item.value}회</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.loadingText}>선택한 날짜의 통계가 없습니다.</Text>
+            )}
+          </View>
+        </ScrollView>
 
         <View style={styles.card}>
           <Text style={styles.statsTitle}>
@@ -396,6 +496,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f0f0f0",
   },
+  statsCardsRow: { gap: 12, marginBottom: 16 },
+  statCard: {
+    width: STATS_CARD_WIDTH,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
+  },
   yearRow: { alignItems: "center", marginBottom: 4 },
   yearText: { fontSize: 13, fontWeight: "700", color: "#888888" },
   monthSelector: {
@@ -445,6 +554,8 @@ const styles = StyleSheet.create({
   },
   loadingText: { color: "#888888", textAlign: "center", marginVertical: 20 },
   chartWrapper: { alignItems: "center" },
+  axisText: { color: "#64748B", fontSize: 10, fontWeight: "700" },
+  donutCenterText: { fontSize: 15, fontWeight: "900", color: "#333333" },
   legendContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
