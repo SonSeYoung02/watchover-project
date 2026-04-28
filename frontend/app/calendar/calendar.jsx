@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ChevronLeft, ChevronRight, MessageCircle, Sparkles } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, ChevronRight, MessageCircle, Minus, Sparkles } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -95,6 +95,7 @@ export default function Calendar() {
   const [dailyChartData, setDailyChartData] = useState([]);
   const [emotionLogsByDate, setEmotionLogsByDate] = useState({});
   const [emotionFilter, setEmotionFilter] = useState(null);
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [dailyAnalysis, setDailyAnalysis] = useState(null);
   const [dailyLoading, setDailyLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -275,14 +276,16 @@ export default function Calendar() {
     setCurrentDate(nextDate);
     setSelectedDate(nextDate);
     setEmotionFilter(null);
+    setFilterMenuOpen(false);
   };
 
   const handleFilterPress = (option) => {
     if (option === "전체") {
       setEmotionFilter(null);
-      return;
+    } else {
+      setEmotionFilter((prev) => (prev === option ? null : option));
     }
-    setEmotionFilter((prev) => (prev === option ? null : option));
+    setFilterMenuOpen(false);
   };
 
   const prevMonth = () => moveMonth(-1);
@@ -332,44 +335,74 @@ export default function Calendar() {
               <ChevronRight size={24} color="#5AA9E6" />
             </TouchableOpacity>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterChipsRow}
-          >
-            {FILTER_OPTIONS.map((option) => {
-              const isActive =
-                option === "전체"
-                  ? emotionFilter === null
-                  : emotionFilter === option;
-              const chipColor =
-                option === "전체"
-                  ? "#5AA9E6"
-                  : EMOTION_COLORS[option] || "#5AA9E6";
-              return (
-                <TouchableOpacity
-                  key={`filter-${option}`}
-                  onPress={() => handleFilterPress(option)}
-                  style={[
-                    styles.filterChip,
-                    isActive && {
-                      backgroundColor: chipColor,
-                      borderColor: chipColor,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      isActive && styles.filterChipTextActive,
-                    ]}
-                  >
-                    {option}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          <View style={styles.fabContainer} pointerEvents="box-none">
+            <TouchableOpacity
+              style={[
+                styles.fabSplit,
+                {
+                  backgroundColor: emotionFilter
+                    ? EMOTION_COLORS[emotionFilter] || "#94A3B8"
+                    : "#94A3B8",
+                },
+              ]}
+              activeOpacity={0.85}
+              onPress={() => setFilterMenuOpen((prev) => !prev)}
+            >
+              <Text style={styles.fabMainText}>
+                {emotionFilter || "전체"}
+              </Text>
+              <View
+                style={[
+                  styles.fabDivider,
+                  filterMenuOpen && styles.fabDividerActive,
+                ]}
+              />
+              {filterMenuOpen ? (
+                <Minus size={20} strokeWidth={4} color="rgba(15,23,42,0.35)" />
+              ) : (
+                <ChevronDown size={20} strokeWidth={4} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+            {filterMenuOpen && (
+              <View style={styles.fabMenu}>
+                {FILTER_OPTIONS.map((option) => {
+                  const isActive =
+                    option === "전체"
+                      ? emotionFilter === null
+                      : emotionFilter === option;
+                  const dotColor =
+                    option === "전체"
+                      ? "#94A3B8"
+                      : EMOTION_COLORS[option] || "#94A3B8";
+                  return (
+                    <TouchableOpacity
+                      key={`fab-${option}`}
+                      style={[
+                        styles.fabMenuItem,
+                        isActive && styles.fabMenuItemActive,
+                      ]}
+                      onPress={() => handleFilterPress(option)}
+                    >
+                      <View
+                        style={[
+                          styles.fabMenuDot,
+                          { backgroundColor: dotColor },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.fabMenuText,
+                          isActive && styles.fabMenuTextActive,
+                        ]}
+                      >
+                        {option}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
           <View style={styles.calendarGrid}>
             {days.map((day, idx) => (
               <View key={`day-${idx}`} style={styles.dayCellContainer}>
@@ -407,9 +440,8 @@ export default function Calendar() {
                     : "#333";
               const matchesFilter =
                 emotionFilter === null || dayEmotion === emotionFilter;
-              const isDimmed = emotionFilter !== null && !matchesFilter;
-              const isHighlighted =
-                emotionFilter !== null && matchesFilter && emotionColor;
+              const showEmotion = matchesFilter && emotionColor;
+              const isHighlighted = emotionFilter !== null && showEmotion;
 
               return (
                 <TouchableOpacity
@@ -427,7 +459,6 @@ export default function Calendar() {
                         backgroundColor: `${emotionColor}22`,
                         borderRadius: 16,
                       },
-                      isDimmed && styles.dateInnerDimmed,
                     ]}
                   >
                     <Text
@@ -435,17 +466,15 @@ export default function Calendar() {
                         styles.dateText,
                         !isSelected && { color },
                         isSelected && styles.dateTextSelected,
-                        isDimmed && styles.dateTextDimmed,
                       ]}
                     >
                       {day}
                     </Text>
-                    {emotionColor && (
+                    {showEmotion && (
                       <View
                         style={[
                           styles.emotionDot,
                           { backgroundColor: emotionColor },
-                          isDimmed && { opacity: 0.25 },
                         ]}
                       />
                     )}
@@ -475,10 +504,10 @@ export default function Calendar() {
               />
             ) : monthlyTotal > 0 ? (
               <View style={styles.progressList}>
-                {monthlyChartData
-                  .filter((item) => item.value > 0)
-                  .map((item) => {
-                    const percent = Math.round((item.value / monthlyTotal) * 100);
+                {monthlyChartData.map((item) => {
+                    const percent = monthlyTotal
+                      ? Math.round((item.value / monthlyTotal) * 100)
+                      : 0;
                     const emotionColor = EMOTION_COLORS[item.label] || "#E6F2FC";
                     return (
                       <View key={item.label} style={styles.progressItem}>
@@ -657,6 +686,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#f0f0f0",
+    position: "relative",
   },
   statCard: {
     backgroundColor: "#ffffff",
@@ -716,28 +746,78 @@ const styles = StyleSheet.create({
   dateText: { fontSize: 12, fontWeight: "600" },
   dateTextSelected: { color: "#111111", fontWeight: "800" },
   dateTextDimmed: { color: "#CBD5E1" },
-  filterChipsRow: {
-    paddingVertical: 8,
-    paddingHorizontal: 2,
-    gap: 8,
-    marginBottom: 12,
+  fabContainer: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    alignItems: "flex-end",
+    zIndex: 50,
   },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  fabSplit: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 999,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    marginRight: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minWidth: 96,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  filterChipText: {
-    fontSize: 12,
-    fontWeight: "800",
+  fabMainText: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: "#FFFFFF",
+  },
+  fabDivider: {
+    width: 2,
+    height: 16,
+    backgroundColor: "rgba(255,255,255,0.35)",
+    marginHorizontal: 10,
+  },
+  fabDividerActive: {
+    backgroundColor: "rgba(15,23,42,0.35)",
+  },
+  fabMenu: {
+    marginTop: 8,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    paddingVertical: 6,
+    minWidth: 120,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: "#EAF2F8",
+  },
+  fabMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  fabMenuItemActive: {
+    backgroundColor: "#F0F9FF",
+  },
+  fabMenuDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  fabMenuText: {
+    fontSize: 13,
+    fontWeight: "700",
     color: "#475569",
   },
-  filterChipTextActive: {
-    color: "#FFFFFF",
+  fabMenuTextActive: {
+    color: "#0F172A",
+    fontWeight: "900",
   },
   comparisonBox: {
     marginTop: 16,
