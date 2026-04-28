@@ -22,6 +22,7 @@ import SearchResult from "./community/search/result";
 import PostsComments from "./community/user/PostsComments";
 import Mypage from "./mypage/Mypage";
 import Settings from "./mypage/Settings";
+import Guide from "./mypage/Guide";
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +57,7 @@ export default function AppNavigator() {
           <Stack.Screen name="PostsComments" component={PostsComments} />
           <Stack.Screen name="Mypage" component={Mypage} />
           <Stack.Screen name="Settings" component={Settings} />
+          <Stack.Screen name="Guide" component={Guide} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

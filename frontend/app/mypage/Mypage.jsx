@@ -2,6 +2,7 @@ import { useNavigation } from "@react-navigation/native";
 import {
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
   Heart,
   LogOut,
   Settings as SettingsIcon,
@@ -186,6 +187,22 @@ const MyPage = () => {
 
           <View style={[styles.menuGroup, { marginBottom: 60 }]}>
             <Text style={styles.groupTitle}>기타</Text>
+            <TouchableOpacity
+              style={styles.menuItemCard}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("Guide")}
+            >
+              <View style={styles.menuLeft}>
+                <View
+                  style={[styles.iconWrapper, { backgroundColor: "#F0F9FF" }]}
+                >
+                  <CircleHelp size={20} color="#5AA9E6" />
+                </View>
+                <Text style={styles.menuText}>앱 사용법</Text>
+              </View>
+              <ChevronRight size={18} color="#cccccc" />
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.footerActionItem}>
               <Text style={styles.footerActionText}>서비스 이용 약관</Text>
             </TouchableOpacity>

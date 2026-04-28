@@ -15,7 +15,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LineChart, PieChart } from "react-native-gifted-charts";
 
 import {
   getDailyAnalysis,
@@ -25,7 +24,7 @@ import {
 } from "../api/calendarApi";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const STATS_CARD_WIDTH = Math.min(300, SCREEN_WIDTH * 0.76);
+const CHART_WIDTH = SCREEN_WIDTH - 96;
 
 const EMOTION_COLORS = {
   기쁨: "#5AA9E6",
@@ -224,6 +223,9 @@ export default function Calendar() {
   const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
   const dynamicDays = Array.from({ length: lastDay }, (_, i) => i + 1);
   const selectedEmotionColor = EMOTION_COLORS[dailyAnalysis?.emotion];
+  const monthlyTotal = monthlyChartData.reduce((sum, item) => sum + item.value, 0);
+  const dailyTotal = dailyChartData.reduce((sum, item) => sum + item.value, 0);
+  const mainDailyEmotion = dailyChartData[0];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -328,98 +330,121 @@ export default function Calendar() {
           </View>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.statsCardsRow}
-        >
-          <View style={styles.statCard}>
-            <Text style={styles.statsTitle}>{currentMonth + 1}월 감정 통계</Text>
+        <View style={styles.statCard}>
+          <View style={styles.statsHeaderRow}>
+            <View>
+              <Text style={styles.statsTitle}>{currentMonth + 1}월</Text>
+              <Text style={styles.statsSubtitle}>감정 흐름</Text>
+            </View>
+            <View style={styles.statValuePill}>
+              <Text style={styles.statValue}>{monthlyTotal}</Text>
+              <Text style={styles.statValueLabel}>회</Text>
+            </View>
+          </View>
             {loading ? (
               <ActivityIndicator
                 size="large"
                 color="#5AA9E6"
                 style={{ marginVertical: 30 }}
               />
-            ) : monthlyChartData.some((item) => item.value > 0) ? (
-              <View style={styles.chartWrapper}>
-                <LineChart
-                  data={monthlyChartData}
-                  curved
-                  areaChart
-                  height={170}
-                  width={STATS_CARD_WIDTH - 70}
-                  thickness={3}
-                  color="#5AA9E6"
-                  startFillColor="#5AA9E6"
-                  endFillColor="#ffffff"
-                  startOpacity={0.22}
-                  endOpacity={0.02}
-                  dataPointsColor="#5AA9E6"
-                  yAxisColor="#E2E8F0"
-                  xAxisColor="#E2E8F0"
-                  rulesColor="#F1F5F9"
-                  yAxisTextStyle={styles.axisText}
-                  xAxisLabelTextStyle={styles.axisText}
-                  noOfSections={4}
-                />
-                <View style={styles.legendContainer}>
-                  {monthlyChartData
-                    .filter((item) => item.value > 0)
-                    .map((item, i) => (
-                      <View key={i} style={styles.legendItem}>
-                        <View
-                          style={[
-                            styles.legendDot,
-                            {
-                              backgroundColor:
-                                EMOTION_COLORS[item.label] || "#E6F2FC",
-                            },
-                          ]}
-                        />
-                        <Text style={styles.legendLabel}>{item.label}</Text>
-                        <Text style={styles.legendValue}>{item.value}회</Text>
+            ) : monthlyTotal > 0 ? (
+              <View style={styles.progressList}>
+                {monthlyChartData
+                  .filter((item) => item.value > 0)
+                  .map((item) => {
+                    const percent = Math.round((item.value / monthlyTotal) * 100);
+                    const emotionColor = EMOTION_COLORS[item.label] || "#E6F2FC";
+                    return (
+                      <View key={item.label} style={styles.progressItem}>
+                        <View style={styles.progressHeader}>
+                          <View style={styles.progressLabelRow}>
+                            <View
+                              style={[
+                                styles.legendDot,
+                                { backgroundColor: emotionColor },
+                              ]}
+                            />
+                            <Text style={styles.progressLabel}>{item.label}</Text>
+                          </View>
+                          <Text style={styles.progressValue}>
+                            {item.value}회 · {percent}%
+                          </Text>
+                        </View>
+                        <View style={styles.progressTrack}>
+                          <View
+                            style={[
+                              styles.progressFill,
+                              {
+                                width: `${percent}%`,
+                                backgroundColor: emotionColor,
+                              },
+                            ]}
+                          />
+                        </View>
                       </View>
-                    ))}
-                </View>
+                    );
+                  })}
               </View>
             ) : (
               <Text style={styles.loadingText}>기록된 데이터가 없습니다.</Text>
             )}
-          </View>
+        </View>
 
-          <View style={styles.statCard}>
-            <Text style={styles.statsTitle}>
-              {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일 감정 통계
-            </Text>
+        <View style={styles.statCard}>
+          <View style={styles.statsHeaderRow}>
+            <View>
+              <Text style={styles.statsTitle}>
+                {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
+              </Text>
+              <Text style={styles.statsSubtitle}>하루 대표 감정</Text>
+            </View>
+            <View
+              style={[
+                styles.emotionPill,
+                {
+                  backgroundColor: mainDailyEmotion?.color || "#F1F5F9",
+                },
+              ]}
+            >
+              <Text style={styles.emotionPillText}>
+                {mainDailyEmotion?.label || "-"}
+              </Text>
+            </View>
+          </View>
             {dailyStatsLoading ? (
               <ActivityIndicator
                 size="large"
                 color="#5AA9E6"
                 style={{ marginVertical: 30 }}
               />
-            ) : dailyChartData.length > 0 ? (
-              <View style={styles.chartWrapper}>
-                <PieChart
-                  data={dailyChartData}
-                  donut
-                  radius={82}
-                  innerRadius={52}
-                  centerLabelComponent={() => (
-                    <Text style={styles.donutCenterText}>일 통계</Text>
-                  )}
-                />
-                <View style={styles.legendContainer}>
-                  {dailyChartData.map((item, i) => (
-                    <View key={i} style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.legendDot,
-                          { backgroundColor: item.color },
-                        ]}
-                      />
-                      <Text style={styles.legendLabel}>{item.label}</Text>
-                      <Text style={styles.legendValue}>{item.value}회</Text>
+            ) : mainDailyEmotion ? (
+              <View style={styles.dailyStatsBody}>
+                <View
+                  style={[
+                    styles.dailyEmotionPanel,
+                    { borderColor: mainDailyEmotion.color },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.dailyEmotionIcon,
+                      { backgroundColor: mainDailyEmotion.color },
+                    ]}
+                  />
+                  <View>
+                    <Text style={styles.dailyEmotionLabel}>
+                      {mainDailyEmotion.label}
+                    </Text>
+                    <Text style={styles.dailyEmotionMeta}>
+                      {dailyTotal}회 기록
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.dailyMiniList}>
+                  {dailyChartData.map((item) => (
+                    <View key={item.label} style={styles.dailyMiniItem}>
+                      <Text style={styles.dailyMiniLabel}>{item.label}</Text>
+                      <Text style={styles.dailyMiniValue}>{item.value}회</Text>
                     </View>
                   ))}
                 </View>
@@ -427,8 +452,7 @@ export default function Calendar() {
             ) : (
               <Text style={styles.loadingText}>선택한 날짜의 통계가 없습니다.</Text>
             )}
-          </View>
-        </ScrollView>
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.statsTitle}>
@@ -496,12 +520,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f0f0f0",
   },
-  statsCardsRow: { gap: 12, marginBottom: 16 },
   statCard: {
-    width: STATS_CARD_WIDTH,
     backgroundColor: "#ffffff",
     borderRadius: 20,
-    padding: 18,
+    padding: 20,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: "#f0f0f0",
   },
@@ -550,16 +573,72 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
     color: "#333333",
-    marginBottom: 20,
   },
+  statsSubtitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#94A3B8",
+    marginTop: 3,
+  },
+  statsHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  statValuePill: {
+    minWidth: 58,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: "#F0F9FF",
+    alignItems: "center",
+  },
+  statValue: { fontSize: 18, fontWeight: "900", color: "#0284C7" },
+  statValueLabel: { fontSize: 10, fontWeight: "800", color: "#64748B" },
+  emotionPill: {
+    minWidth: 58,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 999,
+    alignItems: "center",
+  },
+  emotionPillText: { fontSize: 13, fontWeight: "900", color: "#ffffff" },
   loadingText: { color: "#888888", textAlign: "center", marginVertical: 20 },
-  chartWrapper: { alignItems: "center" },
-  axisText: { color: "#64748B", fontSize: 10, fontWeight: "700" },
-  donutCenterText: { fontSize: 15, fontWeight: "900", color: "#333333" },
+  progressList: { gap: 14 },
+  progressItem: { gap: 8 },
+  progressHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  progressLabelRow: { flexDirection: "row", alignItems: "center" },
+  progressLabel: {
+    fontSize: 14,
+    color: "#1E293B",
+    fontWeight: "800",
+  },
+  progressValue: {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "800",
+  },
+  progressTrack: {
+    height: 10,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
   legendContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
     marginTop: 20,
     gap: 15,
   },
@@ -571,6 +650,54 @@ const styles = StyleSheet.create({
     color: "#888",
     fontWeight: "700",
     marginLeft: 3,
+  },
+  dailyStatsBody: {
+    gap: 14,
+  },
+  dailyEmotionPanel: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 16,
+    backgroundColor: "#ffffff",
+  },
+  dailyEmotionIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    marginRight: 12,
+  },
+  dailyEmotionLabel: {
+    fontSize: 20,
+    color: "#111827",
+    fontWeight: "900",
+  },
+  dailyEmotionMeta: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#94A3B8",
+    marginTop: 3,
+  },
+  dailyMiniList: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  dailyMiniItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#F8FAFC",
+  },
+  dailyMiniLabel: {
+    fontSize: 12,
+    color: "#475569",
+    fontWeight: "800",
+    marginRight: 6,
+  },
+  dailyMiniValue: {
+    fontSize: 12,
+    color: "#111827",
+    fontWeight: "900",
   },
   selectedEmotionRow: {
     flexDirection: "row",
