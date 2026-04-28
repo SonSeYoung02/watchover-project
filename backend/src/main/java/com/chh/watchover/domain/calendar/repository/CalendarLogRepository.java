@@ -27,4 +27,9 @@ public interface CalendarLogRepository extends JpaRepository<CalendarLogEntity, 
             UserEntity user,
             LocalDateTime start,
             LocalDateTime end);
+
+    List<CalendarLogEntity> findAllByUserAndCreatedAtBetweenOrderByCreatedAtAsc(
+            UserEntity user,
+            LocalDateTime start,
+            LocalDateTime end);
 }

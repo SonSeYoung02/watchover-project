@@ -17,7 +17,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PieChart } from "react-native-gifted-charts";
 
-import { postDailyEmotion, getMonthlyStatistics } from "../api/calendarApi";
+import {
+  postDailyEmotion,
+  getMonthlyStatistics,
+  getMonthlyEmotionLogs,
+} from "../api/calendarApi";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -31,12 +35,24 @@ const EMOTION_COLORS = {
   불안: "#F6C177",
 };
 
+const normalizeEmotion = (emotion) => {
+  if (!emotion) return null;
+  if (emotion.includes("기쁨") || emotion.includes("행복")) return "기쁨";
+  if (emotion.includes("슬픔")) return "슬픔";
+  if (emotion.includes("화남") || emotion.includes("분노")) return "화남";
+  if (emotion.includes("혐오")) return "혐오";
+  if (emotion.includes("평온")) return "평온";
+  if (emotion.includes("불안")) return "불안";
+  return emotion;
+};
+
 const Calendar = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [chartData, setChartData] = useState([]);
+  const [emotionLogsByDate, setEmotionLogsByDate] = useState({});
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
 
@@ -74,21 +90,33 @@ const Calendar = () => {
         return;
       }
 
-      const result = await getMonthlyStatistics(
-        token,
-        currentYear,
-        currentMonth + 1,
-      );
-      const stats = Array.isArray(result?.data) ? result.data : [];
+      const [statsResult, logsResult] = await Promise.all([
+        getMonthlyStatistics(token, currentYear, currentMonth + 1),
+        getMonthlyEmotionLogs(token, currentYear, currentMonth + 1),
+      ]);
+      const stats = Array.isArray(statsResult?.data) ? statsResult.data : [];
+      const logs = Array.isArray(logsResult?.data) ? logsResult.data : [];
+
+      const logsByDate = logs.reduce((acc, item) => {
+        const emotion = normalizeEmotion(item.emotion);
+        if (item.date && emotion) {
+          acc[item.date] = emotion;
+        }
+        return acc;
+      }, {});
+      setEmotionLogsByDate(logsByDate);
 
       const formattedData = stats
         .filter((item) => Number(item.count) > 0)
-        .map((item) => ({
-          value: Number(item.count),
-          label: item.emotion,
-          color: EMOTION_COLORS[item.emotion] || "#E6F2FC",
-          gradientCenterColor: EMOTION_COLORS[item.emotion] || "#8EC9F8",
-        }));
+        .map((item) => {
+          const emotion = normalizeEmotion(item.emotion);
+          return {
+            value: Number(item.count),
+            label: emotion,
+            color: EMOTION_COLORS[emotion] || "#E6F2FC",
+            gradientCenterColor: EMOTION_COLORS[emotion] || "#8EC9F8",
+          };
+        });
 
       setChartData(formattedData);
     } catch (error) {
@@ -98,6 +126,7 @@ const Calendar = () => {
         console.log("서버 응답:", JSON.stringify(error.response.data));
       }
       setChartData([]);
+      setEmotionLogsByDate({});
     } finally {
       setLoading(false);
     }
@@ -125,7 +154,7 @@ const Calendar = () => {
         String(day).padStart(2, "0"),
       ].join("-");
       const result = await postDailyEmotion(chatRoomId, token, selectedDateText);
-      const emotion = result?.data?.emotion;
+      const emotion = normalizeEmotion(result?.data?.emotion);
 
       if (emotion) {
         Alert.alert(
@@ -205,6 +234,13 @@ const Calendar = () => {
               <View key={`empty-${idx}`} style={styles.dateCell} />
             ))}
             {dynamicDays.map((day) => {
+              const dateKey = [
+                currentYear,
+                String(currentMonth + 1).padStart(2, "0"),
+                String(day).padStart(2, "0"),
+              ].join("-");
+              const dayEmotion = emotionLogsByDate[dateKey];
+              const emotionColor = EMOTION_COLORS[dayEmotion];
               const isSelected =
                 selectedDate.getDate() === day &&
                 selectedDate.getMonth() === currentMonth;
@@ -237,6 +273,14 @@ const Calendar = () => {
                     >
                       {day}
                     </Text>
+                    {emotionColor && (
+                      <View
+                        style={[
+                          styles.emotionDot,
+                          { backgroundColor: emotionColor },
+                        ]}
+                      />
+                    )}
                   </View>
                 </TouchableOpacity>
               );
@@ -347,6 +391,12 @@ const styles = StyleSheet.create({
   dateInnerSelected: { backgroundColor: "#F0F0F0", borderRadius: 16 },
   dateText: { fontSize: 12, fontWeight: "600" },
   dateTextSelected: { color: "#111111", fontWeight: "800" },
+  emotionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 6,
+  },
   statsTitle: {
     fontSize: 18,
     fontWeight: "800",

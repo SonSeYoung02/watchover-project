@@ -37,3 +37,19 @@ export const getMonthlyStatistics = async (token, year, month) => {
     throw error;
   }
 };
+
+export const getMonthlyEmotionLogs = async (token, year, month) => {
+  try {
+    const response = await client.get(
+      "/api/calendar/emotion/logs",
+      {
+        ...authHeaders(token),
+        params: { year, month },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("감정 로그 API 호출 실패:", error);
+    throw error;
+  }
+};

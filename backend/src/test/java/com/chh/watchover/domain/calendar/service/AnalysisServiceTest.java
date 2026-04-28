@@ -1,5 +1,6 @@
 package com.chh.watchover.domain.calendar.service;
 
+import com.chh.watchover.domain.calendar.model.dto.EmotionLogResponse;
 import com.chh.watchover.domain.calendar.model.dto.EmotionStatResponse;
 import com.chh.watchover.domain.calendar.model.entity.CalendarLogEntity;
 import com.chh.watchover.domain.calendar.model.type.EmotionType;
@@ -29,20 +30,21 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AnalysisServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
-    @Mock
-    private MessageRepository messageRepository;
-    @Mock
-    private ChatRoomRepository chatRoomRepository;
-    @Mock
-    private CalendarLogRepository calendarLogRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private MessageRepository messageRepository;
+    @Mock private ChatRoomRepository chatRoomRepository;
+    @Mock private CalendarLogRepository calendarLogRepository;
 
     @InjectMocks
     private AnalysisService analysisService;
@@ -66,14 +68,14 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void analyzeAndSaveToCalendar_returnsNoContentMessage_whenHistoryIsEmpty() {
+    void analyzeAndSaveToCalendar_throwsRuntimeException_whenHistoryIsEmpty() {
         ChatRoomEntity chatRoom = mock(ChatRoomEntity.class);
         when(chatRoomRepository.findById(1L)).thenReturn(Optional.of(chatRoom));
         when(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
 
-        String result = analysisService.analyzeAndSaveToCalendar(1L);
-
-        assertThat(result).isEqualTo("분석할 대화 내용이 없습니다.");
+        assertThatThrownBy(() -> analysisService.analyzeAndSaveToCalendar(1L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("분석할 대화 내용이 없습니다");
         verifyNoInteractions(calendarLogRepository);
     }
 
@@ -81,20 +83,18 @@ class AnalysisServiceTest {
     void analyzeAndSaveToCalendar_savesCalendarLog_andReturnsEmotion_whenGptReturnsValidEmotion() {
         UserEntity user = mock(UserEntity.class);
         ChatRoomEntity chatRoom = mock(ChatRoomEntity.class);
-        when(chatRoom.getUser()).thenReturn(user);
-
         MessageEntity message = mock(MessageEntity.class);
+
+        when(chatRoom.getUser()).thenReturn(user);
         when(message.getRole()).thenReturn(Role.user);
         when(message.getContent()).thenReturn("오늘 행복해요");
-
         when(chatRoomRepository.findById(1L)).thenReturn(Optional.of(chatRoom));
         when(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(message));
-
-        Map<String, Object> messageMap = Map.of("content", "기쁨");
-        Map<String, Object> choice = Map.of("message", messageMap);
-        Map<String, Object> body = Map.of("choices", List.of(choice));
-        ResponseEntity<Map> responseEntity = ResponseEntity.ok(body);
-        when(mockRestTemplate.postForEntity(anyString(), any(), eq(Map.class))).thenReturn(responseEntity);
+        when(mockRestTemplate.postForEntity(anyString(), any(), eq(Map.class)))
+                .thenReturn(ResponseEntity.ok(Map.of(
+                        "choices",
+                        List.of(Map.of("message", Map.of("content", "기쁨")))
+                )));
         when(calendarLogRepository.findFirstByUserAndCreatedAtBetween(eq(user), any(), any()))
                 .thenReturn(Optional.empty());
 
@@ -112,20 +112,18 @@ class AnalysisServiceTest {
     void analyzeAndSaveToCalendar_savesWithDefaultEmotion_whenGptReturnsUnrecognizedValue() {
         UserEntity user = mock(UserEntity.class);
         ChatRoomEntity chatRoom = mock(ChatRoomEntity.class);
-        when(chatRoom.getUser()).thenReturn(user);
-
         MessageEntity message = mock(MessageEntity.class);
-        when(message.getRole()).thenReturn(Role.user);
-        when(message.getContent()).thenReturn("텍스트");
 
+        when(chatRoom.getUser()).thenReturn(user);
+        when(message.getRole()).thenReturn(Role.user);
+        when(message.getContent()).thenReturn("테스트");
         when(chatRoomRepository.findById(1L)).thenReturn(Optional.of(chatRoom));
         when(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(message));
-
-        Map<String, Object> messageMap = Map.of("content", "알수없음");
-        Map<String, Object> choice = Map.of("message", messageMap);
-        Map<String, Object> body = Map.of("choices", List.of(choice));
-        ResponseEntity<Map> responseEntity = ResponseEntity.ok(body);
-        when(mockRestTemplate.postForEntity(anyString(), any(), eq(Map.class))).thenReturn(responseEntity);
+        when(mockRestTemplate.postForEntity(anyString(), any(), eq(Map.class)))
+                .thenReturn(ResponseEntity.ok(Map.of(
+                        "choices",
+                        List.of(Map.of("message", Map.of("content", "알 수 없음")))
+                )));
         when(calendarLogRepository.findFirstByUserAndCreatedAtBetween(eq(user), any(), any()))
                 .thenReturn(Optional.empty());
 
@@ -134,15 +132,6 @@ class AnalysisServiceTest {
         ArgumentCaptor<CalendarLogEntity> captor = ArgumentCaptor.forClass(CalendarLogEntity.class);
         verify(calendarLogRepository).save(captor.capture());
         assertThat(captor.getValue().getEmotion()).isEqualTo(EmotionType.슬픔);
-    }
-
-    @Test
-    void getMonthlyEmotionStats_throwsRuntimeException_whenUserNotFound() {
-        when(userRepository.findByLoginId("ghost")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> analysisService.getMonthlyEmotionStats("ghost", 2024, 1))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("해당 유저를 찾을 수 없습니다");
     }
 
     @Test
@@ -164,13 +153,21 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void getMonthlyEmotionStats_returnsEmptyList_whenNoLogsForMonth() {
+    void getMonthlyEmotionLogs_returnsLogs_whenUserExists() {
         UserEntity user = mock(UserEntity.class);
+        CalendarLogEntity log = new CalendarLogEntity();
+        log.setUser(user);
+        log.setEmotion(EmotionType.화남);
+        log.setCreatedAt(LocalDate.of(2026, 4, 28).atStartOfDay());
+
         when(userRepository.findByLoginId("user1")).thenReturn(Optional.of(user));
-        when(calendarLogRepository.getMonthlyStats(user, 2024, 2)).thenReturn(List.of());
+        when(calendarLogRepository.findAllByUserAndCreatedAtBetweenOrderByCreatedAtAsc(eq(user), any(), any()))
+                .thenReturn(List.of(log));
 
-        List<EmotionStatResponse> result = analysisService.getMonthlyEmotionStats("user1", 2024, 2);
+        List<EmotionLogResponse> result = analysisService.getMonthlyEmotionLogs("user1", 2026, 4);
 
-        assertThat(result).isEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).date()).isEqualTo(LocalDate.of(2026, 4, 28));
+        assertThat(result.get(0).emotion()).isEqualTo("화남");
     }
 }

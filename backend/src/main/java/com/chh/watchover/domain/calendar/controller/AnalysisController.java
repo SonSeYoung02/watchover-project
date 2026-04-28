@@ -1,6 +1,7 @@
 package com.chh.watchover.domain.calendar.controller;
 
 import com.chh.watchover.domain.calendar.model.dto.AnalysisResponse;
+import com.chh.watchover.domain.calendar.model.dto.EmotionLogResponse;
 import com.chh.watchover.domain.calendar.model.dto.EmotionStatResponse;
 import com.chh.watchover.domain.calendar.service.AnalysisService;
 import com.chh.watchover.global.common.ApiResponse;
@@ -66,5 +67,20 @@ public class AnalysisController {
                 month == null ? now.getMonthValue() : month
         );
         return ApiResponse.success(stats);
+    }
+
+    @GetMapping("/logs")
+    public ApiResponse<List<EmotionLogResponse>> getMonthlyLogs(
+            @AuthenticationPrincipal String loginId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month
+    ) {
+        LocalDate now = LocalDate.now();
+        List<EmotionLogResponse> logs = analysisService.getMonthlyEmotionLogs(
+                loginId,
+                year == null ? now.getYear() : year,
+                month == null ? now.getMonthValue() : month
+        );
+        return ApiResponse.success(logs);
     }
 }
