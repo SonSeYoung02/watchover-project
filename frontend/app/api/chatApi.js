@@ -69,3 +69,26 @@ export const getChatList = async (token) => {
     throw error;
   }
 };
+
+export const deleteChatRoom = async (chatRoomId, token) => {
+  try {
+    const response = await client.delete(
+      `/api/chatBot/${chatRoomId}`,
+      authHeaders(token),
+    );
+    return response.data;
+  } catch (error) {
+    console.error('deleteChatRoom error:', error);
+    throw error;
+  }
+};
+
+export const deleteAllChatRooms = async (token) => {
+  try {
+    const response = await client.delete('/api/chatBot', authHeaders(token));
+    return response.data;
+  } catch (error) {
+    console.error('deleteAllChatRooms error:', error);
+    throw error;
+  }
+};

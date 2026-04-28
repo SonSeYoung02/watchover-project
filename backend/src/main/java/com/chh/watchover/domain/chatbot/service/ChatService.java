@@ -126,7 +126,10 @@ public class ChatService {
      * @return 시간순으로 정렬된 대화 메시지 목록
      */
     @Transactional(readOnly = true) // 단순 조회이므로 readOnly를 붙여주면 성능상 이득이 있습니다.
-    public List<ChatResponse> getChatHistory(Long chatRoomId) {
+    public List<ChatResponse> getChatHistory(String loginId, Long chatRoomId) {
+        chatRoomRepository.findByChatRoomIdAndUser_LoginId(chatRoomId, loginId)
+                .orElseThrow(() -> new RuntimeException("채팅방을 찾을 수 없습니다."));
+
         // 1. 해당 방의 모든 메시지를 시간순으로 조회
         List<MessageEntity> messages = messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(chatRoomId);
 
@@ -138,6 +141,18 @@ public class ChatService {
                         .answer(stripSpeakerPrefix(msg.getContent())) // DB에 저장된 메시지 내용
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteChatRoom(String loginId, Long chatRoomId) {
+        ChatRoomEntity chatRoom = chatRoomRepository.findByChatRoomIdAndUser_LoginId(chatRoomId, loginId)
+                .orElseThrow(() -> new RuntimeException("채팅방을 찾을 수 없습니다."));
+        chatRoomRepository.delete(chatRoom);
+    }
+
+    @Transactional
+    public void deleteAllChatRooms(String loginId) {
+        chatRoomRepository.deleteByUser_LoginId(loginId);
     }
 
     @Transactional(readOnly = true)

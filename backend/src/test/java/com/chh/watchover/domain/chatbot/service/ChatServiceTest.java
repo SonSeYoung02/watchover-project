@@ -60,10 +60,12 @@ class ChatServiceTest {
 
     @Test
     void getChatHistory_returnsEmptyList_whenNoMessagesExist() {
+        given(chatRoomRepository.findByChatRoomIdAndUser_LoginId(1L, "chatuser"))
+                .willReturn(Optional.of(chatRoom));
         given(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L))
                 .willReturn(List.of());
 
-        List<ChatResponse> result = chatService.getChatHistory(1L);
+        List<ChatResponse> result = chatService.getChatHistory("chatuser", 1L);
 
         assertThat(result).isEmpty();
     }
@@ -82,8 +84,10 @@ class ChatServiceTest {
 
         given(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L))
                 .willReturn(List.of(msg1, msg2));
+        given(chatRoomRepository.findByChatRoomIdAndUser_LoginId(1L, "chatuser"))
+                .willReturn(Optional.of(chatRoom));
 
-        List<ChatResponse> result = chatService.getChatHistory(1L);
+        List<ChatResponse> result = chatService.getChatHistory("chatuser", 1L);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getRole()).isEqualTo(Role.user.name());
@@ -101,8 +105,10 @@ class ChatServiceTest {
 
         given(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(42L))
                 .willReturn(List.of(msg));
+        given(chatRoomRepository.findByChatRoomIdAndUser_LoginId(42L, "chatuser"))
+                .willReturn(Optional.of(chatRoom));
 
-        List<ChatResponse> result = chatService.getChatHistory(42L);
+        List<ChatResponse> result = chatService.getChatHistory("chatuser", 42L);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getChatRoomId()).isEqualTo(42L);
@@ -130,8 +136,10 @@ class ChatServiceTest {
         Long roomId = 7L;
         given(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(roomId))
                 .willReturn(List.of());
+        given(chatRoomRepository.findByChatRoomIdAndUser_LoginId(roomId, "chatuser"))
+                .willReturn(Optional.of(chatRoom));
 
-        chatService.getChatHistory(roomId);
+        chatService.getChatHistory("chatuser", roomId);
 
         verify(messageRepository).findByChatRoomChatRoomIdOrderByCreatedAtAsc(roomId);
     }
@@ -155,8 +163,10 @@ class ChatServiceTest {
 
         given(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L))
                 .willReturn(List.of(m1, m2, m3));
+        given(chatRoomRepository.findByChatRoomIdAndUser_LoginId(1L, "chatuser"))
+                .willReturn(Optional.of(chatRoom));
 
-        List<ChatResponse> result = chatService.getChatHistory(1L);
+        List<ChatResponse> result = chatService.getChatHistory("chatuser", 1L);
 
         assertThat(result).hasSize(3);
         assertThat(result).extracting(ChatResponse::getAnswer)
@@ -172,10 +182,18 @@ class ChatServiceTest {
 
         given(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L))
                 .willReturn(List.of(msg));
+        given(chatRoomRepository.findByChatRoomIdAndUser_LoginId(1L, "chatuser"))
+                .willReturn(Optional.of(chatRoom));
 
-        List<ChatResponse> result = chatService.getChatHistory(1L);
+        List<ChatResponse> result = chatService.getChatHistory("chatuser", 1L);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getAnswer()).isEqualTo("오늘 많이 힘드셨군요.");
+    }
+    @Test
+    void deleteAllChatRooms_deletesRoomsForLoginId() {
+        chatService.deleteAllChatRooms("chatuser");
+
+        verify(chatRoomRepository).deleteByUser_LoginId("chatuser");
     }
 }

@@ -64,7 +64,21 @@ public class ChatController {
     public ApiResponse<List<ChatResponse>> getHistory(
             @AuthenticationPrincipal String loginId,
             @Parameter(description = "조회할 채팅방 ID", required = true) @PathVariable("chatingRoomId") Long chatRoomId) {
-        List<ChatResponse> history = chatService.getChatHistory(chatRoomId);
+        List<ChatResponse> history = chatService.getChatHistory(loginId, chatRoomId);
         return ApiResponse.success(history);
+    }
+
+    @DeleteMapping("/{chatingRoomId}")
+    public ApiResponse<Void> deleteChatRoom(
+            @AuthenticationPrincipal String loginId,
+            @PathVariable("chatingRoomId") Long chatRoomId) {
+        chatService.deleteChatRoom(loginId, chatRoomId);
+        return ApiResponse.success(null);
+    }
+
+    @DeleteMapping
+    public ApiResponse<Void> deleteAllChatRooms(@AuthenticationPrincipal String loginId) {
+        chatService.deleteAllChatRooms(loginId);
+        return ApiResponse.success(null);
     }
 }
