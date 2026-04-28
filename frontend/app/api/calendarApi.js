@@ -4,7 +4,6 @@ const authHeaders = (token) => ({
   headers: { Authorization: `Bearer ${token}` },
 });
 
-// 1. 일일 감정 분석 저장
 export const postDailyEmotion = async (chatingRoomId, token, date) => {
   try {
     const response = await client.post(
@@ -17,11 +16,11 @@ export const postDailyEmotion = async (chatingRoomId, token, date) => {
     );
     return response.data;
   } catch (error) {
+    console.error("일일 감정 분석 API 호출 실패:", error);
     throw error;
   }
 };
 
-// 2. 월간 감정 통계 조회
 export const getMonthlyStatistics = async (token, year, month) => {
   try {
     const response = await client.get(
@@ -33,7 +32,7 @@ export const getMonthlyStatistics = async (token, year, month) => {
     );
     return response.data;
   } catch (error) {
-    console.error("통계 API 호출 실패:", error);
+    console.error("감정 통계 API 호출 실패:", error);
     throw error;
   }
 };

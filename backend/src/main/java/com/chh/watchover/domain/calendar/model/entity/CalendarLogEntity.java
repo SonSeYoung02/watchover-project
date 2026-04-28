@@ -1,8 +1,18 @@
 package com.chh.watchover.domain.calendar.model.entity;
 
 import com.chh.watchover.domain.calendar.model.type.EmotionType;
+import com.chh.watchover.domain.calendar.model.type.EmotionTypeConverter;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,8 +32,8 @@ public class CalendarLogEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @Enumerated(EnumType.STRING) // DB의 enum과 매핑
-    private EmotionType emotion; // '기쁨', '슬픔', '화남', '혐오'
+    @Convert(converter = EmotionTypeConverter.class)
+    private EmotionType emotion;
 
     private LocalDateTime createdAt = LocalDateTime.now();
 }

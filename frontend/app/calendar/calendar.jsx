@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Platform,
   ScrollView,
@@ -12,15 +13,14 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PieChart } from "react-native-gifted-charts";
 
 import {
-  postDailyEmotion,
-  getMonthlyStatistics,
   getMonthlyEmotionLogs,
+  getMonthlyStatistics,
+  postDailyEmotion,
 } from "../api/calendarApi";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -46,7 +46,7 @@ const normalizeEmotion = (emotion) => {
   return emotion;
 };
 
-const Calendar = () => {
+export default function Calendar() {
   const navigation = useNavigation();
   const route = useRoute();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -56,13 +56,9 @@ const Calendar = () => {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
 
-  const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
-
-  useEffect(() => {
-    fetchStatistics();
-  }, [currentYear, currentMonth]);
 
   const getToken = async () => {
     const token = await AsyncStorage.getItem("userToken");
@@ -76,9 +72,7 @@ const Calendar = () => {
 
   const resolveChatRoomId = async () => {
     const routeChatRoomId = route.params?.chatRoomId;
-    if (routeChatRoomId) {
-      return routeChatRoomId;
-    }
+    if (routeChatRoomId) return routeChatRoomId;
     return AsyncStorage.getItem("lastChatRoomId");
   };
 
@@ -86,14 +80,13 @@ const Calendar = () => {
     setLoading(true);
     try {
       const token = await getToken();
-      if (!token) {
-        return;
-      }
+      if (!token) return;
 
       const [statsResult, logsResult] = await Promise.all([
         getMonthlyStatistics(token, currentYear, currentMonth + 1),
         getMonthlyEmotionLogs(token, currentYear, currentMonth + 1),
       ]);
+
       const stats = Array.isArray(statsResult?.data) ? statsResult.data : [];
       const logs = Array.isArray(logsResult?.data) ? logsResult.data : [];
 
@@ -120,7 +113,7 @@ const Calendar = () => {
 
       setChartData(formattedData);
     } catch (error) {
-      console.log("통계 데이터 로딩 에러");
+      console.log("통계 데이터 로딩 오류");
       if (error.response) {
         console.log("상태 코드:", error.response.status);
         console.log("서버 응답:", JSON.stringify(error.response.data));
@@ -132,14 +125,16 @@ const Calendar = () => {
     }
   };
 
+  useEffect(() => {
+    fetchStatistics();
+  }, [currentYear, currentMonth]);
+
   const handleDatePress = async (day) => {
     setSelectedDate(new Date(currentYear, currentMonth, day));
 
     try {
       const token = await getToken();
-      if (!token) {
-        return;
-      }
+      if (!token) return;
 
       const chatRoomId = await resolveChatRoomId();
       if (!chatRoomId) {
@@ -217,7 +212,7 @@ const Calendar = () => {
             </TouchableOpacity>
           </View>
           <View style={styles.calendarGrid}>
-            {DAYS.map((day, idx) => (
+            {days.map((day, idx) => (
               <View key={`day-${idx}`} style={styles.dayCellContainer}>
                 <Text
                   style={[
@@ -251,6 +246,7 @@ const Calendar = () => {
                   : dayOfWeek === 6
                     ? "#5AA9E6"
                     : "#333";
+
               return (
                 <TouchableOpacity
                   key={`date-${day}`}
@@ -331,7 +327,7 @@ const Calendar = () => {
       </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
@@ -422,5 +418,3 @@ const styles = StyleSheet.create({
     marginLeft: 3,
   },
 });
-
-export default Calendar;
