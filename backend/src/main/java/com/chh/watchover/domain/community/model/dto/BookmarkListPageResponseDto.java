@@ -19,7 +19,9 @@ public record BookmarkListPageResponseDto(
     public static BookmarkListPageResponseDto from(Page<BookmarkEntity> bookmarkPage) {
         return new BookmarkListPageResponseDto(
                 bookmarkPage.getContent().stream()
-                        .map(b -> ListPostResponseDto.from(b.getPost()))
+                        .map(BookmarkEntity::getPost)
+                        .filter(p -> p != null)
+                        .map(ListPostResponseDto::from)
                         .toList(),
                 bookmarkPage.getTotalPages(),
                 bookmarkPage.getTotalElements(),

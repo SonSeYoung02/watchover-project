@@ -4,6 +4,9 @@ import com.chh.watchover.domain.community.model.entity.CommentEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,5 +16,7 @@ public interface CommentRepository extends JpaRepository<CommentEntity, Long> {
     List<CommentEntity> findByPost_PostIdOrderByCreatedAtAsc(Long postId);
     Page<CommentEntity> findByUser_LoginId(String loginId, Pageable pageable);
 
-    void deleteByPost_PostId(Long postId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from CommentEntity c where c.post.postId = :postId")
+    void deleteByPost_PostId(@Param("postId") Long postId);
 }

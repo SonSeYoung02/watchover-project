@@ -3,6 +3,8 @@ package com.chh.watchover.domain.community.model.entity;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(
@@ -29,6 +31,7 @@ public class BookmarkEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private PostEntity post;
 
     public static BookmarkEntity createBookmark(UserEntity user, PostEntity post) {
