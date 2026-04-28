@@ -84,7 +84,13 @@ public class CharacterService {
         log.info("[Character] 시각 특징 추출 완료: {}", visualFeatures);
 
         // 4단계: DALL-E 3 캐릭터 생성
-        String finalPrompt = String.format("%s, based on these visual features: %s", baseStylePrompt, visualFeatures);
+        String genderPrompt = buildGenderPrompt(user);
+        String finalPrompt = String.format(
+                "%s%n%nUser profile constraint: %s%nBased on these visual features: %s",
+                baseStylePrompt,
+                genderPrompt,
+                visualFeatures
+        );
         String generatedImageUrl = callOpenAiDallE3(finalPrompt);
         log.info("[Character] DALL-E 3 이미지 URL 수신: {}", generatedImageUrl);
 
@@ -297,6 +303,17 @@ public class CharacterService {
             log.error("[Character] DALL-E 3 응답 파싱 실패 body={}", response.getBody(), e);
             throw new OpenAiApiException(ErrorCode.OPENAI_API_RESPONSE_PARSE_FAILED);
         }
+    }
+
+    private String buildGenderPrompt(UserEntity user) {
+        if (user.getGender() == null) {
+            return "Use a gender-neutral character design.";
+        }
+
+        return switch (user.getGender()) {
+            case M -> "Create a male-presenting 2D character avatar.";
+            case F -> "Create a female-presenting 2D character avatar.";
+        };
     }
 
     private String loadPromptFromFile() {
