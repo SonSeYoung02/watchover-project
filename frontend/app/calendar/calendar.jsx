@@ -1,4 +1,4 @@
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useEffect, useState } from "react";
@@ -18,9 +18,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { PieChart } from "react-native-gifted-charts";
 
 import {
+  getDailyAnalysis,
   getMonthlyEmotionLogs,
   getMonthlyStatistics,
-  postDailyEmotion,
 } from "../api/calendarApi";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -48,13 +48,13 @@ const normalizeEmotion = (emotion) => {
 
 export default function Calendar() {
   const navigation = useNavigation();
-  const route = useRoute();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [chartData, setChartData] = useState([]);
   const [emotionLogsByDate, setEmotionLogsByDate] = useState({});
+  const [dailyAnalysis, setDailyAnalysis] = useState(null);
+  const [dailyLoading, setDailyLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [analyzing, setAnalyzing] = useState(false);
 
   const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const currentYear = currentDate.getFullYear();
@@ -68,12 +68,6 @@ export default function Calendar() {
       return null;
     }
     return token;
-  };
-
-  const resolveChatRoomId = async () => {
-    const routeChatRoomId = route.params?.chatRoomId;
-    if (routeChatRoomId) return routeChatRoomId;
-    return AsyncStorage.getItem("lastChatRoomId");
   };
 
   const fetchStatistics = async () => {
@@ -93,7 +87,10 @@ export default function Calendar() {
       const logsByDate = logs.reduce((acc, item) => {
         const emotion = normalizeEmotion(item.emotion);
         if (item.date && emotion) {
-          acc[item.date] = emotion;
+          acc[item.date] = {
+            ...item,
+            emotion,
+          };
         }
         return acc;
       }, {});
@@ -129,56 +126,65 @@ export default function Calendar() {
     fetchStatistics();
   }, [currentYear, currentMonth]);
 
-  const handleDatePress = async (day) => {
-    setSelectedDate(new Date(currentYear, currentMonth, day));
+  const formatDate = (date) =>
+    [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
 
+  const fetchDailyAnalysis = async (date) => {
+    setDailyLoading(true);
     try {
       const token = await getToken();
       if (!token) return;
 
-      const chatRoomId = await resolveChatRoomId();
-      if (!chatRoomId) {
-        Alert.alert("알림", "분석할 채팅방이 없습니다. 먼저 AI 상담을 진행해 주세요.");
-        return;
-      }
-
-      setAnalyzing(true);
-      const selectedDateText = [
-        currentYear,
-        String(currentMonth + 1).padStart(2, "0"),
-        String(day).padStart(2, "0"),
-      ].join("-");
-      const result = await postDailyEmotion(chatRoomId, token, selectedDateText);
-      const emotion = normalizeEmotion(result?.data?.emotion);
-
-      if (emotion) {
-        Alert.alert(
-          `${day}일 감정 분석`,
-          `오늘의 주된 감정은 [${emotion}]입니다.`,
-        );
-        fetchStatistics();
-      }
+      const result = await getDailyAnalysis(token, formatDate(date));
+      const data = result?.data;
+      setDailyAnalysis(
+        data && (data.emotion || data.summary || data.analysis)
+          ? {
+              ...data,
+              emotion: normalizeEmotion(data.emotion),
+            }
+          : null,
+      );
     } catch (error) {
-      console.log("일일 감정 분석 실패");
+      console.log("일별 분석 데이터 로딩 오류");
       if (error.response) {
         console.log("상태 코드:", error.response.status);
         console.log("서버 응답:", JSON.stringify(error.response.data));
       }
-      Alert.alert("알림", "분석할 대화 데이터가 충분하지 않습니다.");
+      setDailyAnalysis(null);
     } finally {
-      setAnalyzing(false);
+      setDailyLoading(false);
     }
   };
 
-  const prevMonth = () =>
-    setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
-  const nextMonth = () =>
-    setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
+  const handleDatePress = (day) => {
+    const nextSelectedDate = new Date(currentYear, currentMonth, day);
+    setSelectedDate(nextSelectedDate);
+    fetchDailyAnalysis(nextSelectedDate);
+  };
+
+  const moveMonth = (monthOffset) => {
+    const nextDate = new Date(currentYear, currentMonth + monthOffset, 1);
+    setCurrentDate(nextDate);
+    setSelectedDate(nextDate);
+    setDailyAnalysis(null);
+  };
+
+  const prevMonth = () => moveMonth(-1);
+  const nextMonth = () => moveMonth(1);
 
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
   const emptyDays = Array.from({ length: firstDayIndex }, (_, i) => i);
   const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
   const dynamicDays = Array.from({ length: lastDay }, (_, i) => i + 1);
+  const selectedDateText = formatDate(selectedDate);
+  const selectedLog = emotionLogsByDate[selectedDateText];
+  const selectedAnalysis = dailyAnalysis || selectedLog;
+  const selectedEmotionColor = EMOTION_COLORS[selectedAnalysis?.emotion];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -234,7 +240,7 @@ export default function Calendar() {
                 String(currentMonth + 1).padStart(2, "0"),
                 String(day).padStart(2, "0"),
               ].join("-");
-              const dayEmotion = emotionLogsByDate[dateKey];
+              const dayEmotion = emotionLogsByDate[dateKey]?.emotion;
               const emotionColor = EMOTION_COLORS[dayEmotion];
               const isSelected =
                 selectedDate.getDate() === day &&
@@ -252,7 +258,6 @@ export default function Calendar() {
                   key={`date-${day}`}
                   style={styles.dateCell}
                   onPress={() => handleDatePress(day)}
-                  disabled={analyzing}
                 >
                   <View
                     style={[
@@ -322,6 +327,45 @@ export default function Calendar() {
             </View>
           ) : (
             <Text style={styles.loadingText}>기록된 데이터가 없습니다.</Text>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.statsTitle}>
+            {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일 분석
+          </Text>
+          {dailyLoading ? (
+            <ActivityIndicator
+              size="small"
+              color="#5AA9E6"
+              style={{ marginVertical: 20 }}
+            />
+          ) : selectedAnalysis ? (
+            <View>
+              <View style={styles.selectedEmotionRow}>
+                <View
+                  style={[
+                    styles.selectedEmotionDot,
+                    { backgroundColor: selectedEmotionColor || "#E6F2FC" },
+                  ]}
+                />
+                <Text style={styles.selectedEmotionText}>
+                  {selectedAnalysis.emotion}
+                </Text>
+              </View>
+              <Text style={styles.sectionLabel}>대화 요약</Text>
+              <Text style={styles.analysisText}>
+                {selectedAnalysis.summary || "저장된 대화 요약이 없습니다."}
+              </Text>
+              <Text style={styles.sectionLabel}>감정 분석</Text>
+              <Text style={styles.analysisText}>
+                {selectedAnalysis.analysis || "저장된 분석 내용이 없습니다."}
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.loadingText}>
+              선택한 날짜에 저장된 분석 기록이 없습니다.
+            </Text>
           )}
         </View>
       </ScrollView>
@@ -416,5 +460,34 @@ const styles = StyleSheet.create({
     color: "#888",
     fontWeight: "700",
     marginLeft: 3,
+  },
+  selectedEmotionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  selectedEmotionDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  selectedEmotionText: {
+    fontSize: 16,
+    color: "#333333",
+    fontWeight: "800",
+  },
+  sectionLabel: {
+    fontSize: 13,
+    color: "#5AA9E6",
+    fontWeight: "800",
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  analysisText: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#333333",
+    marginBottom: 12,
   },
 });

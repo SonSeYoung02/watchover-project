@@ -1,6 +1,7 @@
 package com.chh.watchover.domain.calendar.controller;
 
 import com.chh.watchover.domain.calendar.model.dto.AnalysisResponse;
+import com.chh.watchover.domain.calendar.model.dto.DailyAnalysisResponse;
 import com.chh.watchover.domain.calendar.model.dto.EmotionLogResponse;
 import com.chh.watchover.domain.calendar.model.dto.EmotionStatResponse;
 import com.chh.watchover.domain.calendar.service.AnalysisService;
@@ -42,8 +43,7 @@ public class AnalysisController {
             @RequestParam(required = false) LocalDate date
     ) {
         LocalDate analysisDate = date == null ? LocalDate.now() : date;
-        String emotionResult = analysisService.analyzeAndSaveToCalendar(chatRoomId, analysisDate);
-        AnalysisResponse data = new AnalysisResponse(emotionResult, analysisDate.atStartOfDay());
+        AnalysisResponse data = analysisService.analyzeAndSaveToCalendar(chatRoomId, analysisDate);
         return ApiResponse.success(data);
     }
 
@@ -82,5 +82,14 @@ public class AnalysisController {
                 month == null ? now.getMonthValue() : month
         );
         return ApiResponse.success(logs);
+    }
+
+    @GetMapping("/daily")
+    public ApiResponse<DailyAnalysisResponse> getDailyAnalysis(
+            @AuthenticationPrincipal String loginId,
+            @RequestParam LocalDate date
+    ) {
+        DailyAnalysisResponse analysis = analysisService.getDailyAnalysis(loginId, date);
+        return ApiResponse.success(analysis);
     }
 }

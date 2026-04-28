@@ -1,5 +1,7 @@
 package com.chh.watchover.domain.calendar.service;
 
+import com.chh.watchover.domain.calendar.model.dto.AnalysisResponse;
+import com.chh.watchover.domain.calendar.model.dto.DailyAnalysisResponse;
 import com.chh.watchover.domain.calendar.model.dto.EmotionLogResponse;
 import com.chh.watchover.domain.calendar.model.dto.EmotionStatResponse;
 import com.chh.watchover.domain.calendar.model.entity.CalendarLogEntity;
@@ -98,14 +100,46 @@ class AnalysisServiceTest {
         when(calendarLogRepository.findFirstByUserAndCreatedAtBetween(eq(user), any(), any()))
                 .thenReturn(Optional.empty());
 
-        String result = analysisService.analyzeAndSaveToCalendar(1L, LocalDate.of(2026, 4, 28));
+        AnalysisResponse result = analysisService.analyzeAndSaveToCalendar(1L, LocalDate.of(2026, 4, 28));
 
-        assertThat(result).isEqualTo("기쁨");
+        assertThat(result.getEmotion()).isEqualTo("기쁨");
         ArgumentCaptor<CalendarLogEntity> captor = ArgumentCaptor.forClass(CalendarLogEntity.class);
         verify(calendarLogRepository).save(captor.capture());
         assertThat(captor.getValue().getEmotion()).isEqualTo(EmotionType.기쁨);
         assertThat(captor.getValue().getUser()).isEqualTo(user);
         assertThat(captor.getValue().getCreatedAt()).isEqualTo(LocalDate.of(2026, 4, 28).atStartOfDay());
+    }
+
+    @Test
+    void analyzeAndSaveToCalendar_savesSummaryAndAnalysis_whenGptReturnsJson() {
+        UserEntity user = mock(UserEntity.class);
+        ChatRoomEntity chatRoom = mock(ChatRoomEntity.class);
+        MessageEntity message = mock(MessageEntity.class);
+
+        when(chatRoom.getUser()).thenReturn(user);
+        when(message.getRole()).thenReturn(Role.user);
+        when(message.getContent()).thenReturn("일이 잘 풀려서 기뻐요");
+        when(chatRoomRepository.findById(1L)).thenReturn(Optional.of(chatRoom));
+        when(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(message));
+        when(mockRestTemplate.postForEntity(anyString(), any(), eq(Map.class)))
+                .thenReturn(ResponseEntity.ok(Map.of(
+                        "choices",
+                        List.of(Map.of("message", Map.of(
+                                "content",
+                                "{\"emotion\":\"기쁨\",\"summary\":\"일이 잘 풀려 기분이 좋아진 대화입니다.\",\"analysis\":\"긍정 표현이 반복되어 기쁨으로 판단했습니다.\"}"
+                        )))
+                )));
+        when(calendarLogRepository.findFirstByUserAndCreatedAtBetween(eq(user), any(), any()))
+                .thenReturn(Optional.empty());
+
+        AnalysisResponse result = analysisService.analyzeAndSaveToCalendar(1L, LocalDate.of(2026, 4, 28));
+
+        assertThat(result.getEmotion()).isEqualTo("기쁨");
+        assertThat(result.getSummary()).isEqualTo("일이 잘 풀려 기분이 좋아진 대화입니다.");
+        assertThat(result.getAnalysis()).isEqualTo("긍정 표현이 반복되어 기쁨으로 판단했습니다.");
+        ArgumentCaptor<CalendarLogEntity> captor = ArgumentCaptor.forClass(CalendarLogEntity.class);
+        verify(calendarLogRepository).save(captor.capture());
+        assertThat(captor.getValue().getEmotion()).isEqualTo(EmotionType.기쁨);
     }
 
     @Test
@@ -169,5 +203,41 @@ class AnalysisServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).date()).isEqualTo(LocalDate.of(2026, 4, 28));
         assertThat(result.get(0).emotion()).isEqualTo("화남");
+    }
+
+    @Test
+    void getDailyAnalysis_returnsSavedEmotionAndGeneratedAnalysis_whenConversationExists() {
+        UserEntity user = mock(UserEntity.class);
+        ChatRoomEntity chatRoom = mock(ChatRoomEntity.class);
+        MessageEntity message = mock(MessageEntity.class);
+        CalendarLogEntity log = new CalendarLogEntity();
+        log.setUser(user);
+        log.setEmotion(EmotionType.화남);
+        log.setCreatedAt(LocalDate.of(2026, 4, 28).atStartOfDay());
+
+        when(userRepository.findByLoginId("user1")).thenReturn(Optional.of(user));
+        when(calendarLogRepository.findFirstByUserAndCreatedAtBetween(eq(user), any(), any()))
+                .thenReturn(Optional.of(log));
+        when(chatRoomRepository.findByUserAndCreatedAtBetweenOrderByCreatedAtAsc(eq(user), any(), any()))
+                .thenReturn(List.of(chatRoom));
+        when(chatRoom.getChatRoomId()).thenReturn(1L);
+        when(messageRepository.findByChatRoomChatRoomIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(message));
+        when(message.getRole()).thenReturn(Role.user);
+        when(message.getContent()).thenReturn("너무 짜증났어요");
+        when(mockRestTemplate.postForEntity(anyString(), any(), eq(Map.class)))
+                .thenReturn(ResponseEntity.ok(Map.of(
+                        "choices",
+                        List.of(Map.of("message", Map.of(
+                                "content",
+                                "{\"emotion\":\"화남\",\"summary\":\"짜증 나는 일을 이야기했습니다.\",\"analysis\":\"분노 표현이 많아 화남으로 판단했습니다.\"}"
+                        )))
+                )));
+
+        DailyAnalysisResponse result = analysisService.getDailyAnalysis("user1", LocalDate.of(2026, 4, 28));
+
+        assertThat(result.date()).isEqualTo(LocalDate.of(2026, 4, 28));
+        assertThat(result.emotion()).isEqualTo("화남");
+        assertThat(result.summary()).isEqualTo("짜증 나는 일을 이야기했습니다.");
+        assertThat(result.analysis()).isEqualTo("분노 표현이 많아 화남으로 판단했습니다.");
     }
 }

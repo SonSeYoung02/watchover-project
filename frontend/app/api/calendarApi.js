@@ -52,3 +52,19 @@ export const getMonthlyEmotionLogs = async (token, year, month) => {
     throw error;
   }
 };
+
+export const getDailyAnalysis = async (token, date) => {
+  try {
+    const response = await client.get(
+      "/api/calendar/emotion/daily",
+      {
+        ...authHeaders(token),
+        params: { date },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("일별 감정 분석 API 호출 실패:", error);
+    throw error;
+  }
+};

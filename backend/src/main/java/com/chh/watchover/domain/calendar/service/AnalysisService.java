@@ -1,5 +1,7 @@
 package com.chh.watchover.domain.calendar.service;
 
+import com.chh.watchover.domain.calendar.model.dto.AnalysisResponse;
+import com.chh.watchover.domain.calendar.model.dto.DailyAnalysisResponse;
 import com.chh.watchover.domain.calendar.model.dto.EmotionLogResponse;
 import com.chh.watchover.domain.calendar.model.dto.EmotionStatResponse;
 import com.chh.watchover.domain.calendar.model.entity.CalendarLogEntity;
@@ -11,6 +13,8 @@ import com.chh.watchover.domain.chatbot.repository.ChatRoomRepository;
 import com.chh.watchover.domain.chatbot.repository.MessageRepository;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
 import com.chh.watchover.domain.user.repository.UserRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -40,14 +44,15 @@ public class AnalysisService {
     private final ChatRoomRepository chatRoomRepository;
     private final CalendarLogRepository calendarLogRepository;
     private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
-    public String analyzeAndSaveToCalendar(Long chatRoomId) {
+    public AnalysisResponse analyzeAndSaveToCalendar(Long chatRoomId) {
         return analyzeAndSaveToCalendar(chatRoomId, LocalDate.now());
     }
 
     @Transactional
-    public String analyzeAndSaveToCalendar(Long chatRoomId, LocalDate targetDate) {
+    public AnalysisResponse analyzeAndSaveToCalendar(Long chatRoomId, LocalDate targetDate) {
         ChatRoomEntity chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new RuntimeException("채팅방을 찾을 수 없습니다."));
 
@@ -61,7 +66,8 @@ public class AnalysisService {
             conversation.append(msg.getRole().name()).append(": ").append(msg.getContent()).append("\n");
         }
 
-        String analyzedEmotion = normalizeEmotion(requestEmotionAnalysis(conversation.toString()));
+        EmotionAnalysisResult analysisResult = requestEmotionAnalysis(conversation.toString());
+        String analyzedEmotion = normalizeEmotion(analysisResult.emotion());
 
         UserEntity user = chatRoom.getUser();
         LocalDate analysisDate = targetDate == null ? LocalDate.now() : targetDate;
@@ -76,7 +82,12 @@ public class AnalysisService {
         calendarLog.setCreatedAt(startOfDay);
         calendarLogRepository.save(calendarLog);
 
-        return analyzedEmotion;
+        return new AnalysisResponse(
+                analyzedEmotion,
+                analysisResult.summary(),
+                analysisResult.analysis(),
+                startOfDay
+        );
     }
 
     @Transactional(readOnly = true)
@@ -101,10 +112,60 @@ public class AnalysisService {
                 .toList();
     }
 
-    private String requestEmotionAnalysis(String conversation) {
+    @Transactional(readOnly = true)
+    public DailyAnalysisResponse getDailyAnalysis(String loginId, LocalDate date) {
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+
+        LocalDate analysisDate = date == null ? LocalDate.now() : date;
+        LocalDateTime start = analysisDate.atStartOfDay();
+        LocalDateTime end = analysisDate.plusDays(1).atStartOfDay();
+        String savedEmotion = calendarLogRepository.findFirstByUserAndCreatedAtBetween(user, start, end)
+                .map(log -> log.getEmotion().name())
+                .orElse(null);
+
+        List<ChatRoomEntity> chatRooms = chatRoomRepository
+                .findByUserAndCreatedAtBetweenOrderByCreatedAtAsc(user, start, end);
+        String conversation = buildConversation(chatRooms);
+        if (conversation.isBlank()) {
+            return new DailyAnalysisResponse(analysisDate, savedEmotion, null, null);
+        }
+
+        EmotionAnalysisResult analysisResult = requestEmotionAnalysis(conversation);
+        String emotion = savedEmotion == null
+                ? normalizeEmotion(analysisResult.emotion())
+                : savedEmotion;
+        return new DailyAnalysisResponse(
+                analysisDate,
+                emotion,
+                analysisResult.summary(),
+                analysisResult.analysis()
+        );
+    }
+
+    private String buildConversation(List<ChatRoomEntity> chatRooms) {
+        StringBuilder conversation = new StringBuilder();
+        for (ChatRoomEntity chatRoom : chatRooms) {
+            List<MessageEntity> history = messageRepository
+                    .findByChatRoomChatRoomIdOrderByCreatedAtAsc(chatRoom.getChatRoomId());
+            for (MessageEntity msg : history) {
+                conversation.append(msg.getRole().name())
+                        .append(": ")
+                        .append(msg.getContent())
+                        .append("\n");
+            }
+        }
+        return conversation.toString();
+    }
+
+    private EmotionAnalysisResult requestEmotionAnalysis(String conversation) {
         String systemPrompt = "당신은 사용자의 대화를 분석하여 주된 감정을 하나로 분류하는 전문가입니다.";
-        String userPrompt = "다음 대화 내역을 보고 사용자의 주된 감정을 하나만 골라주세요.\n"
-                + "조건: 반드시 '기쁨', '슬픔', '화남', '혐오' 중 하나의 단어로만 대답하세요. 다른 설명은 절대 하지 마세요.\n\n"
+        String userPrompt = "다음 대화 내역을 보고 사용자의 주된 감정을 분석해 주세요.\n"
+                + "조건:\n"
+                + "1. emotion은 반드시 '기쁨', '슬픔', '화남', '혐오' 중 하나만 사용하세요.\n"
+                + "2. summary는 사용자가 나눈 대화 내용을 1문장으로 요약하세요.\n"
+                + "3. analysis는 해당 감정으로 판단한 이유를 1~2문장으로 설명하세요.\n"
+                + "4. 반드시 JSON만 응답하세요. 형식: {\"emotion\":\"기쁨\",\"summary\":\"...\",\"analysis\":\"...\"}\n\n"
                 + "대화 내용:\n" + conversation;
 
         HttpHeaders headers = new HttpHeaders();
@@ -118,7 +179,8 @@ public class AnalysisService {
         Map<String, Object> requestBody = Map.of(
                 "model", "gpt-4o",
                 "messages", messages,
-                "temperature", 0.1
+                "temperature", 0.1,
+                "response_format", Map.of("type", "json_object")
         );
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
@@ -143,7 +205,29 @@ public class AnalysisService {
             throw new RuntimeException("감정 분석 메시지가 비어 있습니다.");
         }
 
-        return ((String) messageMap.get("content")).trim();
+        return parseEmotionAnalysis((String) messageMap.get("content"));
+    }
+
+    private EmotionAnalysisResult parseEmotionAnalysis(String rawContent) {
+        if (rawContent == null || rawContent.isBlank()) {
+            return new EmotionAnalysisResult(EmotionType.슬픔.name(), null, null);
+        }
+
+        String content = rawContent.trim();
+        try {
+            EmotionAnalysisResult result = objectMapper.readValue(content, EmotionAnalysisResult.class);
+            return new EmotionAnalysisResult(
+                    result.emotion(),
+                    blankToNull(result.summary()),
+                    blankToNull(result.analysis())
+            );
+        } catch (JsonProcessingException ignored) {
+            return new EmotionAnalysisResult(content, null, null);
+        }
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private String normalizeEmotion(String rawEmotion) {
@@ -168,5 +252,8 @@ public class AnalysisService {
         }
 
         return EmotionType.슬픔.name();
+    }
+
+    private record EmotionAnalysisResult(String emotion, String summary, String analysis) {
     }
 }
