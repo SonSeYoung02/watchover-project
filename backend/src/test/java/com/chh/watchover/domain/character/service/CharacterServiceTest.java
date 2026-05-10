@@ -59,7 +59,7 @@ class CharacterServiceTest {
     @Test
     void createMultimodalCharacter_throwsRuntimeException_whenUserNotFound() throws IOException {
         Resource resource = mock(Resource.class);
-        when(resourceLoader.getResource("classpath:prompts/base-prompt.md")).thenReturn(resource);
+        when(resourceLoader.getResource("classpath:prompts/extract-features.md")).thenReturn(resource);
         when(resource.exists()).thenReturn(false);
 
         MultipartFile photo = mock(MultipartFile.class);
@@ -89,7 +89,7 @@ class CharacterServiceTest {
     @Test
     void createMultimodalCharacter_savesCharacterProfile_andReturnsS3Url_whenSuccessful() throws IOException {
         Resource resource = mock(Resource.class);
-        when(resourceLoader.getResource("classpath:prompts/base-prompt.md")).thenReturn(resource);
+        when(resourceLoader.getResource("classpath:prompts/extract-features.md")).thenReturn(resource);
         when(resource.exists()).thenReturn(false);
 
         MultipartFile photo = mock(MultipartFile.class);
@@ -126,7 +126,7 @@ class CharacterServiceTest {
     @Test
     void createMultimodalCharacter_loadsBasePromptFromFile_whenResourceExists() throws IOException {
         Resource resource = mock(Resource.class);
-        when(resourceLoader.getResource("classpath:prompts/base-prompt.md")).thenReturn(resource);
+        when(resourceLoader.getResource("classpath:prompts/extract-features.md")).thenReturn(resource);
         when(resource.exists()).thenReturn(true);
 
         java.io.InputStream stream = new java.io.ByteArrayInputStream("A custom 2D style".getBytes());
@@ -149,7 +149,7 @@ class CharacterServiceTest {
                 .isInstanceOf(RuntimeException.class);
 
         // Verifies the resource loader was consulted — prompt loading branch was exercised
-        verify(resourceLoader).getResource("classpath:prompts/base-prompt.md");
+        verify(resourceLoader).getResource("classpath:prompts/extract-features.md");
         verify(resource).exists();
         verify(resource).getInputStream();
     }

@@ -4,6 +4,7 @@ import com.chh.watchover.domain.character.model.entity.CharacterProfileEntity;
 import com.chh.watchover.domain.character.repository.CharacterProfileRepository;
 import com.chh.watchover.domain.user.model.entity.UserEntity;
 import com.chh.watchover.domain.user.repository.UserRepository; // 유저 레포지토리 필요
+import com.chh.watchover.domain.user.model.type.Gender;
 import com.chh.watchover.global.exception.OpenAiApiException;
 import com.chh.watchover.global.exception.code.ErrorCode;
 import com.chh.watchover.global.service.S3UploadService; // S3 서비스 패키지 경로 확인 필요
@@ -55,6 +56,7 @@ public class CharacterService {
      * @param loginId   인증 토큰에서 추출한 사용자 loginId
      * @return S3에 업로드된 캐릭터 이미지의 URL
      */
+
     @Transactional
     public String createMultimodalCharacter(MultipartFile userPhoto, String loginId) {
         // 0단계: 사용자 식별 (Principal 기반)
@@ -71,27 +73,23 @@ public class CharacterService {
             throw new OpenAiApiException(ErrorCode.OPENAI_API_IMAGE_DATA_EMPTY);
         }
 
-        // 2단계: 기본 프롬프트 로드
-        String baseStylePrompt = loadPromptFromFile();
-        log.info("[Character] 프롬프트 로드 완료 length={}", baseStylePrompt.length());
+        // 1. GPT-4o로 키워드 추출 (extract-features.md 사용)
+        String genderInfo = buildGenderPrompt(user);
+        String extractedKeywords = analyzePhotoWithGpt4o(userPhoto, genderInfo);
 
-        // 3단계: GPT-4o 사진 분석
-        String visualFeatures = analyzePhotoWithGpt4o(userPhoto);
-        if (visualFeatures.isBlank()) {
-            log.error("[Character] GPT-4o 응답이 비어있음");
-            throw new OpenAiApiException(ErrorCode.OPENAI_API_CONTENT_EMPTY);
+        // 안전 장치 (정책 위반 시)
+        if (extractedKeywords.contains("SAFETY") || extractedKeywords.contains("sorry")) {
+            log.warn("[Character] 분석 거부 감지. 기본값으로 대체합니다.");
+            extractedKeywords = "Short hair, Solid color top, None";
         }
-        log.info("[Character] 시각 특징 추출 완료: {}", visualFeatures);
 
-        // 4단계: DALL-E 3 캐릭터 생성
-        String genderPrompt = buildGenderPrompt(user);
-        String finalPrompt = String.format(
-                "%s%n%nUser profile constraint: %s%nBased on these visual features: %s",
-                baseStylePrompt,
-                genderPrompt,
-                visualFeatures
-        );
-        String generatedImageUrl = callOpenAiDallE3(finalPrompt);
+        // 2. 고정 스타일 파일 로드 및 최종 조립
+        String finalDallePrompt = buildDallePrompt(extractedKeywords, user);
+
+        log.info("[Character] DALL-E 3 전송 프롬프트: {}", finalDallePrompt);
+
+        // 4. DALL-E 3 호출 (이미 완성된 문장을 그대로 전송)
+        String generatedImageUrl = callOpenAiDallE3(finalDallePrompt);
         log.info("[Character] DALL-E 3 이미지 URL 수신: {}", generatedImageUrl);
 
         // 5단계: 생성 이미지 다운로드
@@ -180,7 +178,7 @@ public class CharacterService {
         }
     }
 
-    private String analyzePhotoWithGpt4o(MultipartFile photo) {
+    private String analyzePhotoWithGpt4o(MultipartFile photo, String genderInfo) {
         String url = "https://api.openai.com/v1/chat/completions";
 
         byte[] imageBytes;
@@ -196,6 +194,9 @@ public class CharacterService {
 
         String base64Image = Base64.getEncoder().encodeToString(imageBytes).replaceAll("\\s", "");
 
+        // 파일에서 시스템 프롬프트 로드 및 성별 주입
+        String systemInstruction = String.format(loadPromptResource("extract-features.md"), genderInfo);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);
@@ -209,7 +210,7 @@ public class CharacterService {
 
         ObjectNode textObj = mapper.createObjectNode();
         textObj.put("type", "text");
-        textObj.put("text", "Extract 3-5 design keywords for a 2D character. Focus on colors and outfit.");
+        textObj.put("text", systemInstruction);
         content.add(textObj);
 
         ObjectNode imageObj = mapper.createObjectNode();
@@ -251,7 +252,17 @@ public class CharacterService {
             if (messageBody == null) {
                 throw new OpenAiApiException(ErrorCode.OPENAI_API_MESSAGE_NOT_FOUND);
             }
+
+            // 1. [핵심] GPT-4o가 직접 답변을 거부했을 때의 이유(refusal) 확인
+            String refusal = (String) messageBody.get("refusal");
+            if (refusal != null && !refusal.isBlank()) {
+                log.warn("[Character] GPT-4o 분석 거부 사유(Refusal): {}", refusal);
+            }
+
             String result = (String) messageBody.get("content");
+            // ★ 이 로그가 찍혀야 무엇을 분석했는지 알 수 있습니다.
+            log.info("[Character] GPT-4o 분석 결과(Keywords): {}", result);
+
             if (result == null || result.isBlank()) {
                 throw new OpenAiApiException(ErrorCode.OPENAI_API_CONTENT_EMPTY);
             }
@@ -316,23 +327,28 @@ public class CharacterService {
         };
     }
 
-    private String loadPromptFromFile() {
-        Resource resource = resourceLoader.getResource("classpath:prompts/base-prompt.md");
-        if (!resource.exists()) {
-            log.error("[Character] 프롬프트 리소스를 찾을 수 없음 path=classpath:prompts/base-prompt");
-            throw new OpenAiApiException(ErrorCode.OPENAI_API_PROMPT_NOT_FOUND);
-        }
+    private String loadPromptResource(String path) {
+        Resource resource = resourceLoader.getResource("classpath:prompts/" + path);
         try {
-            String content = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8).trim();
-            if (content.isBlank()) {
-                throw new OpenAiApiException(ErrorCode.OPENAI_API_PROMPT_EMPTY);
-            }
-            return content;
-        } catch (OpenAiApiException e) {
-            throw e;
+            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8).trim();
         } catch (IOException e) {
-            log.error("[Character] 프롬프트 파일 읽기 실패", e);
+            log.error("[Character] 프롬프트 파일 읽기 실패: {}", path);
             throw new OpenAiApiException(ErrorCode.OPENAI_API_ERROR);
         }
+    }
+
+    private String buildDallePrompt(String keywords, UserEntity user) {
+        // 스타일 정의용 파일(base-style.md) 로드
+        String styleTemplate = loadPromptResource("base-style.md");
+
+        String genderNoun = "gender-neutral character";
+        if (user.getGender() != null) {
+            genderNoun = (user.getGender() == Gender.M) ? "male chibi character" : "female chibi character";
+        }
+
+        // 파일 내용([GENDER_INFO], [EXTRACTED_KEYWORDS])을 치환
+        return styleTemplate
+                .replace("[GENDER_INFO]", genderNoun)
+                .replace("[EXTRACTED_KEYWORDS]", keywords);
     }
 }

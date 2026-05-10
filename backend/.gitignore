@@ -191,7 +191,7 @@ mcp_config.json
 
 # Local environment variables and secrets
 .env
-.env.*
+../.env.prod
 !.env.example
 !.env.sample
 
